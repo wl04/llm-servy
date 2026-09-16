@@ -1,0 +1,34 @@
+# Build and test output
+**/bin/
+**/obj/
+/artifacts/
+**/TestResults/
+
+# Local IDE state (shared VS Code tasks and launch profiles are committed)
+.vs/
+*.user
+*.suo
+.vscode/settings.json
+
+# Python cache
+**/__pycache__/
+*.py[cod]
+
+# Local configuration, atomic-save files, and backups
+settings.json
+settings.json.*
+launcher-settings.json
+launcher-settings.json.*
+.env
+.env.*
+!.env.example
+
+# Runtime logs and crash dumps
+*.log
+*.log.*
+*.dmp
+
+# OS metadata
+.DS_Store
+Thumbs.db
+Desktop.ini

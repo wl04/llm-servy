@@ -1,0 +1,378 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <data xml:space="preserve" name="Start">
+    <value>Запустить</value>
+  </data>
+  <data xml:space="preserve" name="Stop">
+    <value>Остановить</value>
+  </data>
+  <data xml:space="preserve" name="OpenHarness">
+    <value>Открыть DeepSeek Harness</value>
+  </data>
+  <data xml:space="preserve" name="Settings">
+    <value>Настройки</value>
+  </data>
+  <data xml:space="preserve" name="Show">
+    <value>Показать</value>
+  </data>
+  <data xml:space="preserve" name="Exit">
+    <value>Выход</value>
+  </data>
+  <data xml:space="preserve" name="Save">
+    <value>Сохранить</value>
+  </data>
+  <data xml:space="preserve" name="Cancel">
+    <value>Отмена</value>
+  </data>
+  <data xml:space="preserve" name="SettingsTitle">
+    <value>Настройки LLM Servy</value>
+  </data>
+  <data xml:space="preserve" name="OpenEditor">
+    <value>Открыть в редакторе</value>
+  </data>
+  <data xml:space="preserve" name="OpenFolder">
+    <value>Открыть папку</value>
+  </data>
+  <data xml:space="preserve" name="SettingsPath">
+    <value>Настройки сохраняются в:
+{0}</value>
+  </data>
+  <data xml:space="preserve" name="LogPath">
+    <value>Логи сохраняются в:
+{0}</value>
+  </data>
+  <data xml:space="preserve" name="Help">
+    <value>Описание настройки</value>
+  </data>
+  <data xml:space="preserve" name="GroupModels">
+    <value>Модели</value>
+  </data>
+  <data xml:space="preserve" name="GroupLlama">
+    <value>llama.cpp</value>
+  </data>
+  <data xml:space="preserve" name="GroupDsh">
+    <value>DeepSeek Harness</value>
+  </data>
+  <data xml:space="preserve" name="GroupWsl">
+    <value>WSL</value>
+  </data>
+  <data xml:space="preserve" name="GroupStartup">
+    <value>Запуск</value>
+  </data>
+  <data xml:space="preserve" name="GroupAppearance">
+    <value>Интерфейс</value>
+  </data>
+  <data xml:space="preserve" name="Language">
+    <value>Язык</value>
+  </data>
+  <data xml:space="preserve" name="LanguageHelp">
+    <value>Меняет язык интерфейса без перезапуска сервисов. Для неподдерживаемых системных языков используется английский.</value>
+  </data>
+  <data xml:space="preserve" name="System">
+    <value>Системный</value>
+  </data>
+  <data xml:space="preserve" name="ModelsDirectory">
+    <value>Папка моделей и INI</value>
+  </data>
+  <data xml:space="preserve" name="ModelsDirectoryHelp">
+    <value>Список моделей формируется из INI в выбранном каталоге. Подпапки не сканируются.</value>
+  </data>
+  <data xml:space="preserve" name="LlamaDirectory">
+    <value>Папка llama.cpp</value>
+  </data>
+  <data xml:space="preserve" name="LlamaDirectoryHelp">
+    <value>Содержит llama-server.exe или llama.exe. Пустое значение включает автоматический поиск.</value>
+  </data>
+  <data xml:space="preserve" name="Distro">
+    <value>Дистрибутив WSL</value>
+  </data>
+  <data xml:space="preserve" name="DistroHelp">
+    <value>Установленный дистрибутив, в котором запускается DeepSeek Harness, например Ubuntu.</value>
+  </data>
+  <data xml:space="preserve" name="WslDirectory">
+    <value>Рабочая папка harness в WSL</value>
+  </data>
+  <data xml:space="preserve" name="WslDirectoryHelp">
+    <value>Начальный каталог harness в выбранном дистрибутиве. Путь хранится в формате Linux.</value>
+  </data>
+  <data xml:space="preserve" name="LlamaPort">
+    <value>Порт llama.cpp</value>
+  </data>
+  <data xml:space="preserve" name="LlamaPortHelp">
+    <value>Используется для подключения к API модели. Должен совпадать со значением в настройках провайдера DeepSeek Harness.</value>
+  </data>
+  <data xml:space="preserve" name="BindAddress">
+    <value>Адрес привязки llama.cpp</value>
+  </data>
+  <data xml:space="preserve" name="BindAddressHelp">
+    <value>0.0.0.0 — все IPv4-интерфейсы; 127.0.0.1 — только локальные подключения.</value>
+  </data>
+  <data xml:space="preserve" name="DshPort">
+    <value>Порт harness</value>
+  </data>
+  <data xml:space="preserve" name="DshPortHelp">
+    <value>Порт веб-интерфейса harness. Должен отличаться от порта llama.cpp.</value>
+  </data>
+  <data xml:space="preserve" name="DshPackage">
+    <value>Пакет harness</value>
+  </data>
+  <data xml:space="preserve" name="DshPackageHelp">
+    <value>Точная версия, например @deepseek-ai/dsh@0.1.5-rc.1. При отсутствии локальной копии npm установит пакет при запуске.</value>
+  </data>
+  <data xml:space="preserve" name="TimeoutSeconds">
+    <value>Ожидание запуска, секунд</value>
+  </data>
+  <data xml:space="preserve" name="TimeoutSecondsHelp">
+    <value>Максимальное время ожидания готовности компонента: 10–3600 секунд.</value>
+  </data>
+  <data xml:space="preserve" name="OpenBrowser">
+    <value>Открывать браузер после запуска</value>
+  </data>
+  <data xml:space="preserve" name="OpenBrowserHelp">
+    <value>Открывает веб-интерфейс harness, когда оба компонента готовы.</value>
+  </data>
+  <data xml:space="preserve" name="InvalidPorts">
+    <value>Укажите разные порты в диапазоне 1–65535.</value>
+  </data>
+  <data xml:space="preserve" name="InvalidAddress">
+    <value>Неверный адрес привязки llama.cpp.</value>
+  </data>
+  <data xml:space="preserve" name="InvalidWsl">
+    <value>Укажите дистрибутив WSL и абсолютный рабочий путь Linux.</value>
+  </data>
+  <data xml:space="preserve" name="InvalidTimeout">
+    <value>Ожидание запуска должно составлять от 10 до 3600 секунд.</value>
+  </data>
+  <data xml:space="preserve" name="InvalidPackage">
+    <value>Укажите точную версию пакета @deepseek-ai/dsh.</value>
+  </data>
+  <data xml:space="preserve" name="InvalidLanguage">
+    <value>Неподдерживаемый язык.</value>
+  </data>
+  <data xml:space="preserve" name="InvalidExecutable">
+    <value>Путь к исполняемому файлу должен быть абсолютным.</value>
+  </data>
+  <data xml:space="preserve" name="InvalidModelsDirectory">
+    <value>Папка моделей не существует или путь не абсолютный.</value>
+  </data>
+  <data xml:space="preserve" name="InvalidIni">
+    <value>Укажите существующий INI-файл по абсолютному пути.</value>
+  </data>
+  <data xml:space="preserve" name="MissingExecutable">
+    <value>Исполняемый файл не найден: {0}.</value>
+  </data>
+  <data xml:space="preserve" name="NoLlamaExecutable">
+    <value>В папке llama.cpp нет llama-server.exe или llama.exe.</value>
+  </data>
+  <data xml:space="preserve" name="NoModels">
+    <value>В INI-файлах не найдены секции моделей.</value>
+  </data>
+  <data xml:space="preserve" name="DuplicateSection">
+    <value>Повторяющаяся секция INI: {0}.</value>
+  </data>
+  <data xml:space="preserve" name="IniReadFailed">
+    <value>Не удалось прочитать INI: {0}.</value>
+  </data>
+  <data xml:space="preserve" name="CatalogReadFailed">
+    <value>Не удалось прочитать папку моделей.</value>
+  </data>
+  <data xml:space="preserve" name="ChooseModels">
+    <value>В настройках выберите папку с INI моделей.</value>
+  </data>
+  <data xml:space="preserve" name="WrongPreset">
+    <value>Выбранная модель не относится к настроенному INI.</value>
+  </data>
+  <data xml:space="preserve" name="SettingsReadFailed">
+    <value>Не удалось прочитать настройки. Файл не изменён.</value>
+  </data>
+  <data xml:space="preserve" name="SettingsSaveFailed">
+    <value>Не удалось сохранить настройки.</value>
+  </data>
+  <data xml:space="preserve" name="SettingsEmpty">
+    <value>Файл настроек пуст.</value>
+  </data>
+  <data xml:space="preserve" name="SettingsSaved">
+    <value>Настройки сохранены. Параметры сервисов применятся при следующем запуске.</value>
+  </data>
+  <data xml:space="preserve" name="SettingsLocation">
+    <value>Настройки: {0}</value>
+  </data>
+  <data xml:space="preserve" name="SettingsMissing">
+    <value>Сохраните настройки перед открытием файла.</value>
+  </data>
+  <data xml:space="preserve" name="SettingsExist">
+    <value>Настройки уже существуют.</value>
+  </data>
+  <data xml:space="preserve" name="MigrationFailed">
+    <value>Не удалось перенести прежние настройки.</value>
+  </data>
+  <data xml:space="preserve" name="LogMissing">
+    <value>Файл журнала ещё не создан.</value>
+  </data>
+  <data xml:space="preserve" name="OpenFailed">
+    <value>Не удалось открыть файл или папку.</value>
+  </data>
+  <data xml:space="preserve" name="LogWriteFailed">
+    <value>Не удалось записать журнал ({0}). Записи остаются в окне.</value>
+  </data>
+  <data xml:space="preserve" name="SelectFolder">
+    <value>Выберите папку</value>
+  </data>
+  <data xml:space="preserve" name="SelectWslFolder">
+    <value>Рабочая папка harness — {0}</value>
+  </data>
+  <data xml:space="preserve" name="WrongDistro">
+    <value>Папка должна относиться к дистрибутиву {0}.</value>
+  </data>
+  <data xml:space="preserve" name="WslPathRequired">
+    <value>Нужна папка в Linux → {0}. Диски Windows доступны через /mnt внутри этого дистрибутива.</value>
+  </data>
+  <data xml:space="preserve" name="Idle">
+    <value>Готов к запуску.</value>
+  </data>
+  <data xml:space="preserve" name="Starting">
+    <value>Запуск…</value>
+  </data>
+  <data xml:space="preserve" name="Stopping">
+    <value>Остановка сервисов…</value>
+  </data>
+  <data xml:space="preserve" name="Cancelled">
+    <value>Запуск отменён.</value>
+  </data>
+  <data xml:space="preserve" name="Ready">
+    <value>Готово: {0}
+Выберите в DeepSeek Harness модель {1}.</value>
+  </data>
+  <data xml:space="preserve" name="AllReady">
+    <value>Оба компонента готовы.</value>
+  </data>
+  <data xml:space="preserve" name="StoppedServices">
+    <value>Остановлены: {0}.</value>
+  </data>
+  <data xml:space="preserve" name="NothingToStop">
+    <value>Нет сервисов для остановки.</value>
+  </data>
+  <data xml:space="preserve" name="StopFailed">
+    <value>Не все сервисы удалось остановить. Повторите остановку.</value>
+  </data>
+  <data xml:space="preserve" name="BrowserNotReady">
+    <value>Веб-интерфейс ещё не готов.</value>
+  </data>
+  <data xml:space="preserve" name="AlreadyRunning">
+    <value>LLM Servy уже работает. Закройте другой экземпляр через меню трея.</value>
+  </data>
+  <data xml:space="preserve" name="UnexpectedError">
+    <value>Операция завершилась ошибкой ({0}).</value>
+  </data>
+  <data xml:space="preserve" name="StateNotStarted">
+    <value>не запущен</value>
+  </data>
+  <data xml:space="preserve" name="StateChecking">
+    <value>проверка</value>
+  </data>
+  <data xml:space="preserve" name="StateStarting">
+    <value>запускается</value>
+  </data>
+  <data xml:space="preserve" name="StateLoading">
+    <value>загрузка модели</value>
+  </data>
+  <data xml:space="preserve" name="StateReady">
+    <value>готов</value>
+  </data>
+  <data xml:space="preserve" name="StateUnavailable">
+    <value>нет ответа</value>
+  </data>
+  <data xml:space="preserve" name="StateStopped">
+    <value>остановлен</value>
+  </data>
+  <data xml:space="preserve" name="StateFailed">
+    <value>ошибка</value>
+  </data>
+  <data xml:space="preserve" name="StateStopping">
+    <value>останавливается</value>
+  </data>
+  <data xml:space="preserve" name="ExistingService">
+    <value>уже работал</value>
+  </data>
+  <data xml:space="preserve" name="ExistingLlama">
+    <value>Подключение к уже работающему серверу llama.cpp.</value>
+  </data>
+  <data xml:space="preserve" name="ExistingDsh">
+    <value>Подключение к уже работающему DeepSeek Harness.</value>
+  </data>
+  <data xml:space="preserve" name="ExternalLogin">
+    <value>Для входа используйте ссылку, которую вывел работающий процесс harness.</value>
+  </data>
+  <data xml:space="preserve" name="PortOccupied">
+    <value>Порт {0} занят, но сервис не готов.</value>
+  </data>
+  <data xml:space="preserve" name="WaitExisting">
+    <value>Ожидание сервера на занятом порту: до 15 секунд.</value>
+  </data>
+  <data xml:space="preserve" name="MissingBridge">
+    <value>Рядом с приложением отсутствуют файлы моста wsl.</value>
+  </data>
+  <data xml:space="preserve" name="WslFailed">
+    <value>Команда WSL завершилась ошибкой (код {0}).</value>
+  </data>
+  <data xml:space="preserve" name="WslTimeout">
+    <value>WSL не ответил за отведённое время.</value>
+  </data>
+  <data xml:space="preserve" name="MissingModel">
+    <value>Сервер не предлагает модель {0}.</value>
+  </data>
+  <data xml:space="preserve" name="ModelLoadFailed">
+    <value>Ошибка загрузки модели (HTTP {0}).</value>
+  </data>
+  <data xml:space="preserve" name="ModelNotReady">
+    <value>Сервер не подтвердил готовность модели.</value>
+  </data>
+  <data xml:space="preserve" name="ServiceExited">
+    <value>{0} завершился до готовности.</value>
+  </data>
+  <data xml:space="preserve" name="ServiceTimeout">
+    <value>Истекло время ожидания {0}.</value>
+  </data>
+  <data xml:space="preserve" name="WaitingService">
+    <value>Ожидание {0}…</value>
+  </data>
+  <data xml:space="preserve" name="HttpFailure">
+    <value>Сервис вернул HTTP {0}.</value>
+  </data>
+  <data xml:space="preserve" name="InvalidResponse">
+    <value>Сервис вернул некорректный ответ.</value>
+  </data>
+  <data xml:space="preserve" name="DshLoginReady">
+    <value>Harness готов; вход выполняется в браузере.</value>
+  </data>
+  <data xml:space="preserve" name="DshLoginPending">
+    <value>Ожидание ссылки входа в harness.</value>
+  </data>
+  <data xml:space="preserve" name="DshHttp">
+    <value>Harness HTTP {0}.</value>
+  </data>
+  <data xml:space="preserve" name="ProbeTimeout">
+    <value>Истекло время проверки готовности.</value>
+  </data>
+  <data xml:space="preserve" name="ProbeUnavailable">
+    <value>Сервис недоступен.</value>
+  </data>
+  <data xml:space="preserve" name="ProcessStopFailed">
+    <value>Не удалось остановить {0}.</value>
+  </data>
+  <data xml:space="preserve" name="ProcessOutputFailed">
+    <value>Не удалось прочитать вывод процесса ({0}).</value>
+  </data>
+  <data xml:space="preserve" name="Yes">
+    <value>Да</value>
+  </data>
+  <data xml:space="preserve" name="No">
+    <value>Нет</value>
+  </data>
+</root>
