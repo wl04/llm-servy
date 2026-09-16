@@ -31,7 +31,20 @@ DeepSeek Harness must be available in WSL. If the configured package version is 
 
 The default ports are **1234** for llama.cpp and **3080** for the harness web interface. Services start when you click **Start**. Closing the window hides it in the tray; **Exit** stops the services launched by the application and closes it.
 
+## Windows and WSL networking
+
+The launcher and llama.cpp run on Windows; DeepSeek Harness runs in WSL. Opening the harness web interface from a Windows browser does not confirm that the harness can reach the model API.
+
+Set the harness provider's API URL according to your WSL networking mode (replace port `1234` if changed):
+
+- **WSL2 NAT:** use `http://<Windows-host-IP>:1234/v1`. Find the host IP from WSL with `ip route show default` (the address after `via`). llama.cpp must listen on an interface reachable from WSL; the default `0.0.0.0` listens on all IPv4 interfaces, with access subject to Windows Firewall.
+- **WSL2 mirrored:** use `http://127.0.0.1:1234/v1`; llama.cpp can listen on `127.0.0.1` to restrict access to loopback.
+
+`0.0.0.0` is a server bind address, not the API destination to enter in the harness. See [Microsoft's WSL networking guide](https://learn.microsoft.com/en-us/windows/wsl/networking).
+
 ## Configuration
+
+LLM Servy passes INI files directly to llama.cpp through `--models-preset`, using its [native model preset format](https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md#model-presets). This format is supported on Windows and Linux, and the same presets can be used without the launcher.
 
 - Only INI files directly in the selected models folder are scanned. Model paths inside an INI are resolved relative to that INI's folder.
 - The application, INI files, and model files can be stored in different locations. The harness working folder is configured separately.
