@@ -14,7 +14,20 @@ dotnet run --project src/LlmServy
 .\publish.ps1
 ```
 
-Publishing creates `artifacts\publish\llm-servy.exe`. This is a framework-dependent x64 build requiring .NET Desktop Runtime 10 x64. Distribute the entire output directory, including the Russian resource assembly in `ru`, the bridge scripts in `wsl`, and the runtime configuration files.
+Publishing creates `artifacts\publish\llm-servy.exe` plus a versioned ZIP and `.zip.sha256` file in `artifacts\release`. Each package is built in a clean staging folder. This is a framework-dependent x64 build requiring .NET Desktop Runtime 10 x64. Distribute the entire output directory, including the Russian resource assembly in `ru`, the bridge scripts in `wsl`, and the runtime configuration files.
+
+## Releases
+
+`Version` in `src/LlmServy/llm-servy.csproj` is the source for the product version and archive name. The Win32 manifest has a stable assembly identity independent of the product version. Use `0.1.1` for fixes, `0.2.0` for new features during initial development, and a suffix such as `0.2.0-beta.1` for preview builds.
+
+1. Update `Version` and add release notes in `docs/releases/<version>.md`.
+2. Run the C# and Python tests below, then `./publish.ps1 -ExpectedTag v<version>` and `./tests/Verify-Package.ps1` on Windows. A mismatched tag fails before publication.
+3. Extract the ZIP into a new folder and check startup. Run the integration diagnostics on a configured Windows/WSL machine before release; GitHub CI does not provide that environment.
+4. Commit the release changes. Create a GitHub Release targeting that commit with tag `v<version>`, attach the ZIP and its SHA-256 file, and use the prepared release notes. Mark preview builds as prereleases. Review the draft before publishing.
+
+CI runs C# tests and formatting on Windows and supervisor tests on Ubuntu. It packages the Windows application only after both jobs pass and uploads it as a workflow artifact. Tag builds also verify the tag against the project version. CI does not publish a GitHub Release automatically. Download and extract the workflow artifact to obtain the application ZIP and checksum for a release built from the exact commit.
+
+Do not commit build output or replace published release files with different builds under the same version. Increment the version instead. The ZIP excludes .NET, llama.cpp, model files, and user settings. Keep the configured SDK patched for future releases.
 
 ## Architecture
 

@@ -4,7 +4,7 @@
 
 English · [Русский](README.ru.md)
 
-A Windows tray application for running **llama.cpp on Windows** and **DeepSeek Harness in WSL**. Start and stop services, select models from INI files, and open the harness web interface from one window.
+A Windows tray application for running **llama.cpp on Windows** and **DeepSeek Harness in WSL**.
 
 ## Features
 
@@ -15,21 +15,23 @@ A Windows tray application for running **llama.cpp on Windows** and **DeepSeek H
 
 ## Requirements
 
-- Windows x64 with .NET Desktop Runtime 10 x64.
-- A Windows llama.cpp installation supporting `--models-preset`, `/v1/models`, and `/props?autoload=true&model=…`.
+- Windows x64 with [.NET Desktop Runtime 10 x64](https://dotnet.microsoft.com/en-us/download/dotnet/10.0). Under **.NET Desktop Runtime**, choose **Windows → x64**. The runtime is not bundled; the SDK is only needed to build from source.
+- A Windows [llama.cpp build](https://github.com/ggml-org/llama.cpp/releases) matching your hardware (CPU, CUDA, or Vulkan).
 - Models and INI presets compatible with your installed llama.cpp version and hardware.
-- A WSL distribution with Bash, Python 3, and Node.js with npm/npx, compatible with your chosen DeepSeek Harness version.
+- A [WSL distribution](https://learn.microsoft.com/en-us/windows/wsl/install) with Bash, Python 3, and Node.js with npm/npx, compatible with your chosen DeepSeek Harness version.
 
-DeepSeek Harness must be available in WSL. If the configured package version is not installed or cached, LLM Servy invokes npx to install it; this requires network access. The WSL login shell must be able to find Node.js and Python.
+To install WSL with Ubuntu, run `wsl --install -d Ubuntu` in **PowerShell as Administrator**, restart if prompted, then open Ubuntu and complete the Linux user setup.
+
+LLM Servy uses the configured DeepSeek Harness version in WSL. If it is not installed or cached, npx downloads it on first start; this requires network access. The WSL login shell must be able to find Node.js and Python.
 
 ## Quick start
 
-1. [Build the application](#build-from-source) and open `artifacts\publish\llm-servy.exe`. Keep the entire published folder together, including `ru` and `wsl`.
+1. Download the Windows x64 application ZIP from [Releases](https://github.com/wl04/llm-servy/releases), extract the entire archive to a folder, and run `llm-servy.exe`. Choose the application archive, not **Source code**; no installer is required.
 2. Open **Settings** and choose the models/INI folder, the llama.cpp folder, your WSL distribution, and an existing harness working folder in WSL. Set the exact DeepSeek Harness package version to use.
-3. Configure the provider in DeepSeek Harness to use your llama.cpp API address reachable from WSL and the model ID from the INI section. LLM Servy does not edit the harness provider configuration.
-4. Select a model, click **Start**, then **Open DeepSeek Harness** when it becomes available. Select the matching model in the harness.
+3. Select a model, click **Start**, then **Open DeepSeek Harness** when it becomes available.
+4. In DeepSeek Harness, configure the provider with the llama.cpp API address described [below](#windows-and-wsl-networking) and the model ID from the INI section, then select that model. LLM Servy does not edit the harness provider configuration.
 
-The default ports are **1234** for llama.cpp and **3080** for the harness web interface. Services start when you click **Start**. Closing the window hides it in the tray; **Exit** stops the services launched by the application and closes it.
+The default ports are **1234** for llama.cpp and **3080** for the harness web interface. Closing the window hides it in the tray; **Exit** stops the services launched by the application and closes it.
 
 ## Windows and WSL networking
 
@@ -52,6 +54,10 @@ LLM Servy passes INI files directly to llama.cpp through `--models-preset`, usin
 - Service setting changes apply on the next start. **Settings → Interface → Language** changes the UI language after saving, without restarting services. System language uses Russian for Russian Windows and English otherwise.
 
 Settings: `%LOCALAPPDATA%\llm-servy\settings.json`. Logs: `%LOCALAPPDATA%\llm-servy\logs\launcher.log`. Both can be opened from **Settings**. Harness sign-in tokens are kept in memory and redacted from logs; service output retains its original language.
+
+## Updating
+
+Exit LLM Servy from the tray, extract the new release into a separate folder, and launch it from there. Settings remain in `%LOCALAPPDATA%\llm-servy` and are reused automatically.
 
 ## Build from source
 

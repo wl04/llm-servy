@@ -1,0 +1,60 @@
+name: Build and test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - run: dotnet test llm-servy.slnx -c Release
+      - run: dotnet format whitespace llm-servy.slnx --verify-no-changes --no-restore
+
+  python:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: python -m unittest discover -s wsl/tests -v
+
+  package:
+    needs: [windows, python]
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - name: Package release
+        shell: pwsh
+        env:
+          BUILD_REF_TYPE: ${{ github.ref_type }}
+          BUILD_REF_NAME: ${{ github.ref_name }}
+        run: |
+          if ($env:BUILD_REF_TYPE -eq 'tag') {
+            ./publish.ps1 -ExpectedTag $env:BUILD_REF_NAME
+          } else {
+            ./publish.ps1
+          }
+      - name: Verify package
+        shell: pwsh
+        run: ./tests/Verify-Package.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: llm-servy-win-x64
+          path: artifacts/release/*
+          if-no-files-found: error
