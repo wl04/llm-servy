@@ -21,7 +21,7 @@ A Windows tray application for running **llama.cpp on Windows** and **DeepSeek H
 - A Windows [llama.cpp build](https://github.com/ggml-org/llama.cpp/releases) matching your hardware (CPU, CUDA, or Vulkan).
 - Models and INI presets compatible with your installed llama.cpp version and hardware.
 - A [WSL distribution](https://learn.microsoft.com/en-us/windows/wsl/install) with Bash, Python 3, and Node.js with npm/npx, compatible with your chosen harness.
-- For Pi: Pi installed in WSL, `tmux` (`sudo apt install tmux` on Ubuntu), and [Windows Terminal](https://learn.microsoft.com/en-us/windows/terminal/install) on Windows. Pi and tmux must be available in the WSL login shell.
+- For Pi: Pi installed in WSL, `tmux` 3.2+ (`sudo apt install tmux` on Ubuntu), and [Windows Terminal](https://learn.microsoft.com/en-us/windows/terminal/install) on Windows. Pi and tmux must be available in the WSL login shell.
 
 To install WSL with Ubuntu, run `wsl --install -d Ubuntu` in **PowerShell as Administrator**, restart if prompted, then open Ubuntu and complete the Linux user setup.
 

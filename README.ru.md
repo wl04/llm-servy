@@ -21,7 +21,7 @@ Windows-приложение с управлением из трея для за
 - [Сборка llama.cpp для Windows](https://github.com/ggml-org/llama.cpp/releases), соответствующая вашему оборудованию (CPU, CUDA или Vulkan).
 - Модели и INI-пресеты, совместимые с установленной версией llama.cpp и вашим оборудованием.
 - [Дистрибутив WSL](https://learn.microsoft.com/en-us/windows/wsl/install) с Bash, Python 3 и Node.js с npm/npx, совместимыми с выбранным harness.
-- Для Pi: установленный Pi в WSL, `tmux` (`sudo apt install tmux` в Ubuntu) и [Windows Terminal](https://learn.microsoft.com/en-us/windows/terminal/install) в Windows. Pi и tmux должны быть доступны в оболочке входа WSL.
+- Для Pi: установленный Pi в WSL, `tmux` 3.2+ (`sudo apt install tmux` в Ubuntu) и [Windows Terminal](https://learn.microsoft.com/en-us/windows/terminal/install) в Windows. Pi и tmux должны быть доступны в оболочке входа WSL.
 
 Для установки WSL с Ubuntu выполните `wsl --install -d Ubuntu` в **PowerShell от имени администратора**, перезагрузите компьютер, если потребуется, затем откройте Ubuntu и создайте пользователя Linux.
 

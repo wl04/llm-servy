@@ -39,7 +39,14 @@ def main():
     with tempfile.TemporaryDirectory(prefix='llm-servy-pi-', dir='/tmp') as directory:
         socket = str(Path(directory) / 'tmux.sock')
         config = Path(directory) / 'tmux.conf'
-        config.write_text('set -g remain-on-exit on\nset -g status off\nset -g default-terminal "tmux-256color"\n')
+        # Pi requests extended keyboard reporting; CSI-u is available from tmux 3.5.
+        # -q retains the default xterm format on tmux 3.2–3.4.
+        config.write_text(
+            'set -g remain-on-exit on\n'
+            'set -g status off\n'
+            'set -g default-terminal "tmux-256color"\n'
+            'set -s extended-keys on\n'
+            'set -sq extended-keys-format csi-u\n')
         def command(*values, check=True):
             return subprocess.run([tmux, '-S', socket, *values], capture_output=True, text=True,
                                   timeout=3, check=check)

@@ -145,3 +145,15 @@ class PiSupervisorTests(unittest.TestCase):
 
         self.assertEqual(json.loads(arguments.read_text()), ['--provider', 'local', '--model', 'model with spaces'])
         process.communicate('stop\n', timeout=10)
+
+    def test_start_enables_modified_keys_when_pi_session_created(self):
+        process = self.launch()
+        socket = self.event()['socket']
+
+        extended = subprocess.check_output(['tmux', '-S', socket, 'show-options', '-sv', 'extended-keys'], text=True).strip()
+        self.assertEqual(extended, 'on')
+        # tmux 3.2–3.4 supports extended keys but not the configurable wire format.
+        wire_format = subprocess.run(['tmux', '-S', socket, 'show-options', '-sv', 'extended-keys-format'], capture_output=True, text=True)
+        if wire_format.returncode == 0:
+            self.assertEqual(wire_format.stdout.strip(), 'csi-u')
+        process.communicate('stop\n', timeout=10)
