@@ -12,15 +12,20 @@ public static class SettingsValidator
         if (settings.PresetPath is null || settings.SelectedModelId is null || settings.ModelsDirectory is null ||
             settings.LlamaDirectory is null || settings.LlamaExecutable is null || settings.WslDirectory is null)
             throw new AppException(new("SettingsReadFailed"));
-        if (settings.LlamaPort is < 1 or > 65535 || settings.DshPort is < 1 or > 65535 || settings.LlamaPort == settings.DshPort)
+        if (settings.HarnessKind is not ("dsh" or "pi"))
+            throw new AppException(new("InvalidHarness"));
+        if (settings.HarnessKind == "pi" && (string.IsNullOrWhiteSpace(settings.PiDirectory) || !settings.PiDirectory.StartsWith('/') ||
+            string.IsNullOrWhiteSpace(settings.PiExecutable) || string.IsNullOrWhiteSpace(settings.PiProvider)))
+            throw new AppException(new("InvalidPiSettings"));
+        if (settings.LlamaPort is < 1 or > 65535 || (settings.HarnessKind == "dsh" && (settings.DshPort is < 1 or > 65535 || settings.LlamaPort == settings.DshPort)))
             throw new AppException(new("InvalidPorts"));
         if (!IPAddress.TryParse(settings.BindAddress, out _))
             throw new AppException(new("InvalidAddress"));
-        if (string.IsNullOrWhiteSpace(settings.Distro) || !settings.WslDirectory.StartsWith('/'))
+        if (string.IsNullOrWhiteSpace(settings.Distro) || (settings.HarnessKind == "dsh" && !settings.WslDirectory.StartsWith('/')))
             throw new AppException(new("InvalidWsl"));
         if (settings.TimeoutSeconds is < 10 or > 3600)
             throw new AppException(new("InvalidTimeout"));
-        if (!Regex.IsMatch(settings.DshPackage ?? "", @"^@deepseek-ai/dsh@\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?$"))
+        if (settings.HarnessKind == "dsh" && !Regex.IsMatch(settings.DshPackage ?? "", @"^@deepseek-ai/dsh@\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?$"))
             throw new AppException(new("InvalidPackage"));
         if (settings.Language is not ("system" or "en" or "ru"))
             throw new AppException(new("InvalidLanguage"));

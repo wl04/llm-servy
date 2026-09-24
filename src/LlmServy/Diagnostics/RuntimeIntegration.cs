@@ -18,26 +18,39 @@ internal sealed class RuntimeIntegration
         get; private set;
     }
 
-    public async Task RunAsync(AppPaths paths)
+    public async Task RunAsync(AppPaths paths, bool testPi = false)
     {
         Directory.CreateDirectory(paths.DataDirectory);
-        var resultFile = Path.Combine(paths.DataDirectory, "launcher-runtime-test.txt");
+        var resultFile = Path.Combine(paths.DataDirectory, testPi ? "launcher-pi-test.txt" : "launcher-runtime-test.txt");
         var localizer = new Localizer();
         var log = new LauncherLog(paths, localizer);
         LauncherController? controller = null;
         try
         {
-            if (IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpListeners().Any(p => p.Port == TestPort))
+            if (!testPi && IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpListeners().Any(p => p.Port == TestPort))
                 throw new InvalidOperationException("Diagnostic port is already in use.");
             var settings = new SettingsStore(new AppPaths()).Load();
             settings.MigratePaths();
+            settings.HarnessKind = testPi ? "pi" : "dsh";
+            var windows = new WindowsProcessAdapter(TimeProvider.System);
+            string? piFixture = null;
+            if (testPi)
+            {
+                piFixture = Path.Combine(paths.DataDirectory, "pi-fixture.sh");
+                File.WriteAllText(piFixture, "#!/bin/sh\nexec sleep 120\n");
+                var linuxFixture = await windows.ExecuteWslAsync(["-d", settings.Distro, "--exec", "wslpath", "-a", "-u", piFixture], CancellationToken.None);
+                await windows.ExecuteWslAsync(["-d", settings.Distro, "--exec", "chmod", "u+x", linuxFixture], CancellationToken.None);
+                settings.PiExecutable = linuxFixture;
+                settings.PiDirectory = "/tmp";
+                settings.PiProvider = "diagnostic";
+            }
             settings.DshPort = TestPort;
             settings.OpenBrowser = false;
             var presets = Preset.Read(settings.PresetPath);
             var preset = presets.FirstOrDefault(p => p.ModelId == settings.SelectedModelId) ?? presets[0];
             settings.SelectedModelId = preset.ModelId;
             using var llamaHandler = new ReadyLlama(preset.ModelId);
-            var runtime = new LauncherRuntime(paths, log, new WindowsProcessAdapter(TimeProvider.System),
+            var runtime = new LauncherRuntime(paths, log, windows,
                 new HttpClient(llamaHandler),
                 new HttpClient(new HttpClientHandler { UseProxy = false, UseCookies = false, AllowAutoRedirect = false }) { Timeout = TimeSpan.FromSeconds(4) },
                 TimeProvider.System);
@@ -46,31 +59,40 @@ internal sealed class RuntimeIntegration
             await controller.StartAsync(settings, preset);
             if (controller.Status.Failure is { } failure)
                 throw failure;
-            if (!controller.Status.IsActive || !controller.Status.Llama.AlreadyRunning || controller.Status.Dsh.AlreadyRunning)
+            if (!controller.Status.IsActive || !controller.Status.Llama.AlreadyRunning || controller.Status.Harness.AlreadyRunning)
                 throw new InvalidOperationException("Unexpected service ownership or startup state.");
-            if (controller.BrowserUrl is not { } url || !url.Contains("?token=", StringComparison.Ordinal))
+            if (testPi && controller.Terminal is null)
+                throw new InvalidOperationException("Pi terminal endpoint was not captured.");
+            if (!testPi && (controller.BrowserUrl is not { } url || !url.Contains("?token=", StringComparison.Ordinal)))
                 throw new InvalidOperationException("Authenticated harness URL was not captured.");
             await controller.RefreshAsync();
-            if (!controller.Status.BrowserReady)
+            if (!controller.Status.InterfaceReady)
                 throw new InvalidOperationException("Readiness refresh lost the harness.");
 
             await controller.StopAsync();
             if (controller.Status.Failure is { } stopFailure)
                 throw stopFailure;
-            if (!runtime.StoppedServices.SequenceEqual(new[] { "DeepSeek Harness" }) || !controller.CanStart)
+            if (!runtime.StoppedServices.SequenceEqual(new[] { testPi ? "Pi" : "DeepSeek Harness" }) || !controller.CanStart)
                 throw new InvalidOperationException("Unexpected cleanup result.");
             await controller.StartAsync(settings, preset);
             if (controller.Status.Failure is { } restartFailure)
                 throw restartFailure;
-            if (controller.Status.Dsh.AlreadyRunning)
+            if (controller.Status.Harness.AlreadyRunning)
                 throw new InvalidOperationException("Diagnostic restart reused an unexpected process.");
+            var terminal = controller.Terminal;
             controller.Dispose();
             controller = null;
             using var probeClient = new HttpClient(new HttpClientHandler { UseProxy = false, UseCookies = false, AllowAutoRedirect = false }) { Timeout = TimeSpan.FromSeconds(2) };
-            var probe = await new DshEndpoint(TestPort).ProbeAsync(probeClient, false, CancellationToken.None);
-            if (probe.Ready)
+            if (terminal is not null)
+            {
+                await windows.ExecuteWslAsync(["-d", terminal.Distro, "--exec", "test", "!", "-e", terminal.Socket], CancellationToken.None);
+                if (piFixture is not null)
+                    File.Delete(piFixture);
+            }
+            var probe = testPi ? default : await new DshEndpoint(TestPort).ProbeAsync(probeClient, false, CancellationToken.None);
+            if (probe is { Ready: true })
                 throw new InvalidOperationException("Harness still responds after runtime disposal.");
-            File.WriteAllText(resultFile, "PASS production controller/runtime: simulated existing llama.cpp, real Windows -> WSL -> authenticated DeepSeek Harness, refresh, stop, restart, direct disposal, ownership preserved. No GPU model loaded.\n");
+            File.WriteAllText(resultFile, testPi ? "PASS production controller/runtime: simulated llama.cpp and Pi CLI fixture, real Windows -> WSL -> tmux, terminal endpoint, refresh, stop, restart, direct disposal. No GPU model loaded.\n" : "PASS production controller/runtime: simulated existing llama.cpp, real Windows -> WSL -> authenticated DeepSeek Harness, refresh, stop, restart, direct disposal, ownership preserved. No GPU model loaded.\n");
         }
         catch (Exception error)
         {

@@ -17,8 +17,14 @@ public sealed class LauncherForm : Form
     private readonly LauncherLog log;
     private readonly LauncherController controller;
     private readonly ConcurrentQueue<string> pendingLines = new();
+    private readonly ComboBox harnesses = new() { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly TextBox workingFolder = new() { Dock = DockStyle.Fill, ReadOnly = true };
+    private readonly Button chooseFolder = new() { Text = "…", Dock = DockStyle.Fill };
+    private readonly Label harnessLabel = new() { AutoSize = true }, folderLabel = new() { AutoSize = true };
+    private string activeHarness = "dsh";
+    private string activeDirectory = "";
     private readonly ComboBox models = new() { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList };
-    private readonly Label llamaState = new() { AutoSize = true }, dshState = new() { AutoSize = true };
+    private readonly Label llamaState = new() { AutoSize = true }, harnessState = new() { AutoSize = true };
     private readonly Label note = new() { Dock = DockStyle.Fill, ForeColor = Color.DimGray };
     private readonly Button start = new(), stop = new(), browser = new(), options = new();
     private readonly TextBox logBox = new() { Dock = DockStyle.Fill, Multiline = true, ReadOnly = true, WordWrap = false, ScrollBars = ScrollBars.Both, Font = new("Consolas", 9) };
@@ -52,26 +58,68 @@ public sealed class LauncherForm : Form
         MinimumSize = new(930, 620);
         StartPosition = FormStartPosition.CenterScreen;
         Icon = AppIcon.Instance;
-        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new(24), ColumnCount = 1, RowCount = 6 };
+        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new(24), ColumnCount = 1, RowCount = 8 };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        layout.RowStyles.Add(new(SizeType.Absolute, 40));
+        layout.RowStyles.Add(new(SizeType.Absolute, 40));
         layout.RowStyles.Add(new(SizeType.Absolute, 40));
         foreach (var height in new[] { 35, 35, 52, 64 })
             layout.RowStyles.Add(new(SizeType.Absolute, height));
         layout.RowStyles.Add(new(SizeType.Percent, 100));
         Controls.Add(layout);
-        layout.Controls.Add(models, 0, 0);
-        layout.Controls.Add(llamaState, 0, 1);
-        layout.Controls.Add(dshState, 0, 2);
+        var harnessRow = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1 };
+        harnessRow.ColumnStyles.Add(new(SizeType.Absolute, 160));
+        harnessRow.ColumnStyles.Add(new(SizeType.Percent, 100));
+        harnessRow.RowStyles.Add(new(SizeType.Percent, 100));
+        harnessLabel.Text = localizer.Get("HarnessLabel");
+        harnessRow.Controls.Add(harnessLabel, 0, 0);
+        harnessRow.Controls.Add(harnesses, 1, 0);
+        harnesses.Items.AddRange(["DeepSeek Harness", "Pi"]);
+        harnesses.SelectedIndex = settings.HarnessKind == "pi" ? 1 : 0;
+        harnesses.SelectionChangeCommitted += (_, _) =>
+        {
+            var updated = settings with
+            {
+                HarnessKind = harnesses.SelectedIndex == 1 ? "pi" : "dsh"
+            };
+            try
+            {
+                store.Save(updated);
+                settings = updated;
+                Render(controller.Status);
+            }
+            catch (Exception error)
+            {
+                harnesses.SelectedIndex = settings.HarnessKind == "pi" ? 1 : 0;
+                log.WriteError("settings", error);
+                note.Text = localizer.Error(error);
+            }
+        };
+        var folderRow = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, RowCount = 1 };
+        folderRow.ColumnStyles.Add(new(SizeType.Absolute, 160));
+        folderRow.ColumnStyles.Add(new(SizeType.Percent, 100));
+        folderRow.ColumnStyles.Add(new(SizeType.Absolute, 40));
+        folderRow.RowStyles.Add(new(SizeType.Percent, 100));
+        folderLabel.Text = localizer.Get("WorkingFolder");
+        folderRow.Controls.Add(folderLabel, 0, 0);
+        folderRow.Controls.Add(workingFolder, 1, 0);
+        folderRow.Controls.Add(chooseFolder, 2, 0);
+        chooseFolder.Click += (_, _) => ChooseWorkingFolder();
+        layout.Controls.Add(harnessRow, 0, 0);
+        layout.Controls.Add(models, 0, 1);
+        layout.Controls.Add(folderRow, 0, 2);
+        layout.Controls.Add(llamaState, 0, 3);
+        layout.Controls.Add(harnessState, 0, 4);
         var actions = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false };
         Setup(start, localizer.Get("Start"), async (_, _) => await StartAsync());
         Setup(stop, localizer.Get("Stop"), async (_, _) => await controller.StopAsync());
-        Setup(browser, localizer.Get("OpenHarness"), (_, _) => OpenBrowser());
+        Setup(browser, localizer.Get("OpenHarness"), (_, _) => OpenInterface());
         browser.Width = 235;
         Setup(options, localizer.Get("Settings"), (_, _) => EditSettings());
         actions.Controls.AddRange([start, stop, browser, options]);
-        layout.Controls.Add(actions, 0, 3);
-        layout.Controls.Add(note, 0, 4);
-        layout.Controls.Add(logBox, 0, 5);
+        layout.Controls.Add(actions, 0, 5);
+        layout.Controls.Add(note, 0, 6);
+        layout.Controls.Add(logBox, 0, 7);
 
         var menu = new ContextMenuStrip();
         void AddTray(string key, EventHandler action)
@@ -82,7 +130,7 @@ public sealed class LauncherForm : Form
         AddTray("Show", (_, _) => { Show(); WindowState = FormWindowState.Normal; Activate(); });
         AddTray("Start", async (_, _) => await StartAsync());
         AddTray("Stop", async (_, _) => await controller.StopAsync());
-        AddTray("OpenHarness", (_, _) => OpenBrowser());
+        AddTray("OpenHarness", (_, _) => OpenInterface());
         AddTray("Exit", async (_, _) => await QuitAsync());
         menu.Opening += (_, _) =>
         {
@@ -154,6 +202,8 @@ public sealed class LauncherForm : Form
     private void ApplyLanguage()
     {
         localizer.SetLanguage(settings.Language);
+        harnessLabel.Text = localizer.Get("HarnessLabel");
+        folderLabel.Text = localizer.Get("WorkingFolder");
         start.Text = localizer.Get("Start");
         stop.Text = localizer.Get("Stop");
         browser.Text = localizer.Get("OpenHarness");
@@ -195,12 +245,51 @@ public sealed class LauncherForm : Form
     private void Render(LauncherStatus status)
     {
         llamaState.Text = "llama.cpp  ·  " + FormatService(status.Llama);
-        dshState.Text = "DeepSeek Harness  ·  " + FormatService(status.Dsh);
+        var kind = controller.CanStart ? settings.HarnessKind : activeHarness;
+        var name = kind == "pi" ? "Pi" : "DeepSeek Harness";
+        harnessState.Text = name + "  ·  " + (kind == "pi" && status.Harness.State == ServiceState.Ready ? localizer.Get("PiProcessRunning") : FormatService(status.Harness));
+        browser.Text = localizer.Get("OpenSelectedHarness", name);
+        trayItems[3].Item.Text = browser.Text;
+        harnesses.Enabled = controller.CanStart;
+        chooseFolder.Enabled = controller.CanStart;
+        workingFolder.Text = controller.CanStart ? (settings.HarnessKind == "pi" ? settings.PiDirectory : settings.WslDirectory) : activeDirectory;
         start.Enabled = controller.CanStart && models.Items.Count > 0;
         stop.Enabled = controller.CanStop;
-        browser.Enabled = status.BrowserReady;
-        models.Enabled = !status.IsBusy && !status.IsActive;
+        browser.Enabled = status.InterfaceReady;
+        models.Enabled = controller.CanStart;
+        if (kind == "pi" && status.IsActive && status.Harness.State != ServiceState.Ready)
+        {
+            note.Text = localizer.Get("PiNoLongerRunning");
+            return;
+        }
         note.Text = models.Items.Count == 0 ? localizer.Get("ChooseModels") : status.Failure is null ? localizer.Format(status.Message) : localizer.Format(status.Message) + "\n" + localizer.Error(status.Failure);
+    }
+
+    private void ChooseWorkingFolder()
+    {
+        using var picker = new FolderBrowserDialog
+        {
+            Description = localizer.Get("SelectWslFolder", settings.Distro),
+            UseDescriptionForTitle = true,
+            SelectedPath = @"\\wsl.localhost\" + settings.Distro + workingFolder.Text.Replace('/', '\\')
+        };
+        if (picker.ShowDialog(this) != DialogResult.OK)
+            return;
+        try
+        {
+            var path = WslPath.GetLinuxPath(picker.SelectedPath, settings.Distro);
+            var updated = settings with
+            {
+            };
+            if (settings.HarnessKind == "pi")
+                updated.PiDirectory = path;
+            else
+                updated.WslDirectory = path;
+            store.Save(updated);
+            settings = updated;
+            Render(controller.Status);
+        }
+        catch (Exception error) { log.WriteError("settings", error); }
     }
 
     private void EditSettings()
@@ -245,9 +334,11 @@ public sealed class LauncherForm : Form
             var snapshot = settings with
             {
             };
+            activeHarness = snapshot.HarnessKind;
+            activeDirectory = snapshot.HarnessKind == "pi" ? snapshot.PiDirectory : snapshot.WslDirectory;
             await controller.StartAsync(snapshot, selected);
-            if (controller.Status.IsActive && snapshot.OpenBrowser)
-                OpenBrowser();
+            if (controller.Status.IsActive && (snapshot.HarnessKind == "pi" ? snapshot.OpenPiTerminal : snapshot.OpenBrowser))
+                OpenInterface();
             if (!controller.Status.IsActive)
             {
                 LoadPresets();
@@ -257,8 +348,17 @@ public sealed class LauncherForm : Form
         catch (Exception error) { log.WriteError("launcher", error); note.Text = localizer.Error(error); }
     }
 
-    private void OpenBrowser()
+    private void OpenInterface()
     {
+        if (controller.Terminal is { } terminal)
+        {
+            try
+            {
+                ShellActions.OpenTerminal(terminal);
+            }
+            catch (Exception error) { log.WriteError("launcher", error); }
+            return;
+        }
         var url = controller.BrowserUrl;
         if (url is null)
         {

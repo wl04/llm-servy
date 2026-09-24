@@ -4,11 +4,13 @@
 
 English · [Русский](README.ru.md)
 
-A Windows tray application for running **llama.cpp on Windows** and **DeepSeek Harness in WSL**.
+A Windows tray application for running **llama.cpp on Windows** and **DeepSeek Harness or Pi in WSL**.
 
 ## Features
 
 - Model selection from INI files in a configurable folder.
+- Harness selection with a separate working folder for each harness.
+- Pi in Windows Terminal, with a tmux session that survives closing the terminal.
 - Background service startup with logs in the application window.
 - Connection to existing servers; only processes started by LLM Servy are stopped by it.
 - Tray controls and a Russian or English interface.
@@ -18,7 +20,8 @@ A Windows tray application for running **llama.cpp on Windows** and **DeepSeek H
 - Windows x64 with [.NET Desktop Runtime 10 x64](https://dotnet.microsoft.com/en-us/download/dotnet/10.0). Under **.NET Desktop Runtime**, choose **Windows → x64**. The runtime is not bundled; the SDK is only needed to build from source.
 - A Windows [llama.cpp build](https://github.com/ggml-org/llama.cpp/releases) matching your hardware (CPU, CUDA, or Vulkan).
 - Models and INI presets compatible with your installed llama.cpp version and hardware.
-- A [WSL distribution](https://learn.microsoft.com/en-us/windows/wsl/install) with Bash, Python 3, and Node.js with npm/npx, compatible with your chosen DeepSeek Harness version.
+- A [WSL distribution](https://learn.microsoft.com/en-us/windows/wsl/install) with Bash, Python 3, and Node.js with npm/npx, compatible with your chosen harness.
+- For Pi: Pi installed in WSL, `tmux` (`sudo apt install tmux` on Ubuntu), and [Windows Terminal](https://learn.microsoft.com/en-us/windows/terminal/install) on Windows. Pi and tmux must be available in the WSL login shell.
 
 To install WSL with Ubuntu, run `wsl --install -d Ubuntu` in **PowerShell as Administrator**, restart if prompted, then open Ubuntu and complete the Linux user setup.
 
@@ -27,15 +30,23 @@ LLM Servy uses the configured DeepSeek Harness version in WSL. If it is not inst
 ## Quick start
 
 1. Download the Windows x64 application ZIP from [Releases](https://github.com/wl04/llm-servy/releases), extract the entire archive to a folder, and run `llm-servy.exe`. Choose the application archive, not **Source code**; no installer is required.
-2. Open **Settings** and choose the models/INI folder, the llama.cpp folder, your WSL distribution, and an existing harness working folder in WSL. Set the exact DeepSeek Harness package version to use.
-3. Select a model, click **Start**, then **Open DeepSeek Harness** when it becomes available.
-4. In DeepSeek Harness, configure the provider with the llama.cpp API address described [below](#windows-and-wsl-networking) and the model ID from the INI section, then select that model. LLM Servy does not edit the harness provider configuration.
+2. Open **Settings** and choose the models/INI folder, the llama.cpp folder, your WSL distribution, and an existing working folder for your chosen harness. For DeepSeek Harness, set the exact package version. For Pi, set the executable and the name of an existing Pi model provider.
+3. Select **DeepSeek Harness** or **Pi** and a model, click **Start**, then **Open DeepSeek Harness** or **Open Pi**. The working folder can also be selected on the main screen before starting.
+4. In your harness, configure the provider with the llama.cpp API address described [below](#windows-and-wsl-networking) and the model ID from the INI section, then select that model in DeepSeek Harness. Pi receives the provider name and selected model ID automatically. LLM Servy does not edit the harness provider configuration.
 
-The default ports are **1234** for llama.cpp and **3080** for the harness web interface. Closing the window hides it in the tray; **Exit** stops the services launched by the application and closes it.
+The default ports are **1234** for llama.cpp and **3080** for the DeepSeek Harness web interface. Closing the window hides it in the tray; **Exit** stops the services launched by the application and closes it.
+
+## Pi sessions
+
+**Open Pi** attaches Windows Terminal to the running CLI in WSL. Closing the terminal leaves Pi running; opening it again attaches to the same process. **Stop** or tray **Exit** ends that session and the services started by the application. Sessions started independently are left alone.
+
+Pi status describes the process lifecycle: starting, running, stopped, or failed. It does not indicate whether the agent is thinking, using tools, or waiting for input. Conversation output stays in the terminal; the launcher logs lifecycle events. If Pi exits, click **Stop** before starting a new session. Only one harness session is managed at a time.
+
+Pi is not installed automatically. Existing Pi provider settings and credentials remain under Pi's control. Closing the terminal preserves the live session, but stopping the application, WSL, or Windows does not; use Pi's own saved sessions to resume work after a restart.
 
 ## Windows and WSL networking
 
-The launcher and llama.cpp run on Windows; DeepSeek Harness runs in WSL. Opening the harness web interface from a Windows browser does not confirm that the harness can reach the model API.
+The launcher and llama.cpp run on Windows; the selected harness runs in WSL. Opening the harness web interface from a Windows browser does not confirm that the harness can reach the model API.
 
 Set the harness provider's API URL according to your WSL networking mode (replace port `1234` if changed):
 

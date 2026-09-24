@@ -8,7 +8,7 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 $archive = [IO.Compression.ZipFile]::OpenRead($zip)
 try {
     $names = @($archive.Entries | ForEach-Object { $_.FullName.Replace('\', '/') })
-    foreach ($required in @('llm-servy.exe', 'llm-servy.dll', 'llm-servy.runtimeconfig.json', 'ru/llm-servy.resources.dll', 'wsl/wsl-bridge.sh', 'wsl/wsl-supervisor.py', 'LICENSE', 'README.md', 'README.ru.md', 'assets/llm-servy-logo.png', 'docs/development.md')) {
+    foreach ($required in @('llm-servy.exe', 'llm-servy.dll', 'llm-servy.runtimeconfig.json', 'ru/llm-servy.resources.dll', 'wsl/wsl-bridge.sh', 'wsl/wsl-supervisor.py', 'wsl/pi-bridge.sh', 'wsl/pi-supervisor.py', 'LICENSE', 'README.md', 'README.ru.md', 'assets/llm-servy-logo.png', 'docs/development.md')) {
         if ($names -notcontains $required) { throw "Missing archive entry: $required" }
     }
     $runtimeEntry = $archive.Entries | Where-Object { $_.FullName -eq 'llm-servy.runtimeconfig.json' }

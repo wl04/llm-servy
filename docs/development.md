@@ -48,7 +48,7 @@ C# source directories are under `src/LlmServy`:
 
 Domain commands change state and normally return completion only. Queries return data without changing state or raising notifications. The llama.cpp `/props?autoload=true` request is exposed as a command because it loads a model. Native process creation returns an owned handle at the Windows API boundary. Atomic operations and framework contracts may combine state changes with a result when this is inherent to the operation.
 
-Windows processes are created suspended, assigned to a kill-on-close Job Object, and then resumed. The scripts in `wsl` are copied during build and publish. The Python supervisor owns a separate Linux process group, uses a port lock, and terminates its group on a stop request or controller disconnection. Keep simple WSL switches such as `-d` unquoted when constructing the Windows command line.
+Windows processes are created suspended, assigned to a kill-on-close Job Object, and then resumed. The scripts in `wsl` are copied during build and publish. The DSH Python supervisor owns a separate Linux process group, uses a port lock, and terminates its group on a stop request or controller disconnection. The Pi supervisor owns a private tmux socket and session. It emits JSON lifecycle events to `PiSession`; terminal clients attach independently. STOP or controller EOF ends the managed session. Pi conversation output stays in the tmux pane, not the application log. `RuntimeSnapshot.Harness` and `InterfaceReady` describe the selected harness; HTTP readiness remains specific to DSH. Pi readiness means a live process, not a verified provider or agent activity. Keep simple WSL switches such as `-d` unquoted when constructing the Windows command line.
 
 Harness launch URLs are accepted only for the expected local host, port, and root path. Authentication tokens remain in memory, are redacted from logs, and are not sent in readiness probes.
 
@@ -66,10 +66,11 @@ The C# suite covers settings, migration, INI catalogs, localization, HTTP respon
 In WSL, from the repository root:
 
 ```bash
+sudo apt install tmux
 python3 -m unittest discover -s wsl/tests -v
 ```
 
-Supervisor tests exercise process-group cleanup, controller disconnection, duplicate launches, occupied ports, and child failures.
+Supervisor tests exercise process-group cleanup, controller disconnection, duplicate launches, occupied ports, child failures, isolated Pi ownership, argument preservation, and terminal detach/reattach to the same process.
 
 Use `Operation_Behavior_Context` test names in C# and `test_operation_behavior_context` in Python. Bug fixes start with a failing regression test. Asynchronous checks wait for an observable condition with a timeout.
 
@@ -81,15 +82,17 @@ Run these after publishing:
 & .\artifacts\publish\llm-servy.exe --self-test
 & .\artifacts\publish\llm-servy.exe --runtime-integration-test
 & .\artifacts\publish\llm-servy.exe --dsh-integration-test
+& .\artifacts\publish\llm-servy.exe --pi-integration-test
 ```
 
 | Mode | Scope | Report |
 | --- | --- | --- |
 | `--self-test` | Windows argument escaping, pipes, process-tree cleanup, and Ubuntu WSL launch | `launcher-self-test.txt` |
 | `--runtime-integration-test` | Production controller with simulated llama.cpp HTTP and real authenticated harness startup, readiness, shutdown, restart, and direct disposal | `launcher-runtime-test.txt` |
+| `--pi-integration-test` | Production controller with simulated llama.cpp and a CLI fixture, real Windows → WSL → tmux, terminal endpoint, refresh, shutdown, restart and disposal | `launcher-pi-test.txt` |
 | `--dsh-integration-test` | Direct bridge and authenticated harness startup/shutdown | `launcher-dsh-test.txt` |
 
-Run the two harness integration modes separately: both use port **13083**. They read the normal application settings and require a working WSL distribution and the configured harness package. The runtime test also needs a readable model INI; it rejects an occupied diagnostic port. Neither integration mode loads a model into VRAM.
+Run the two DSH integration modes separately: both use port **13083**. They read the normal application settings and require a working WSL distribution and the configured harness package. The runtime test also needs a readable model INI; it rejects an occupied diagnostic port. The Pi mode uses tmux with a temporary CLI fixture and does not require Pi credentials. It validates orchestration, not the actual Pi provider or Windows Terminal UI. No integration mode loads a model into VRAM.
 
 Reports default to `%LOCALAPPDATA%\llm-servy`. Pass `--diagnostics-dir <absolute-path>` to choose another report directory. This does not change the settings read by the harness integration modes.
 
@@ -102,7 +105,7 @@ These modes render a window without starting services or saving the language ove
 & .\artifacts\publish\llm-servy.exe --settings-smoke --language ru --diagnostics-dir C:\temp\servy-settings
 ```
 
-Each writes `launcher-ui.png` to the selected directory. Normal startup does not run diagnostic fixtures.
+Add `--harness pi` to preview the Pi interface. Each writes `launcher-ui.png` to the selected directory. Normal startup does not run diagnostic fixtures.
 
 ## Code conventions
 
@@ -124,7 +127,7 @@ Keep [README.md](../README.md) and [README.ru.md](../README.ru.md) aligned when 
 
 Settings are stored in `%LOCALAPPDATA%\llm-servy\settings.json`. Saving uses a temporary file and atomic replacement. Publication and temporary-file cleanup failures are preserved together. The previous file becomes `settings.json.bak`. Logs rotate from `launcher.log` to `launcher.log.1` after exceeding 10 MiB. Keep user configuration and tokens out of the repository.
 
-If no settings file exists, startup can import `%LOCALAPPDATA%\DshLauncher\settings.json`. The source is preserved and existing target settings are not overwritten. Missing `Language` uses `system`.
+If no settings file exists, startup can import `%LOCALAPPDATA%\DshLauncher\settings.json`. The source is preserved and existing target settings are not overwritten. Missing `Language` uses `system`; missing `HarnessKind` uses `dsh`, preserving existing installations. Pi has separate `PiDirectory`, `PiExecutable`, `PiProvider`, and `OpenPiTerminal` settings. Both harnesses share the selected model and WSL distribution.
 
 For a manual import, before creating application settings:
 

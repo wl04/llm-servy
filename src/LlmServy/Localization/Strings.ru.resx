@@ -93,7 +93,7 @@
     <value>Дистрибутив WSL</value>
   </data>
   <data xml:space="preserve" name="DistroHelp">
-    <value>Установленный дистрибутив, в котором запускается DeepSeek Harness, например Ubuntu.</value>
+    <value>Установленный дистрибутив для запуска выбранного harness, например Ubuntu.</value>
   </data>
   <data xml:space="preserve" name="WslDirectory">
     <value>Рабочая папка harness в WSL</value>
@@ -105,7 +105,7 @@
     <value>Порт llama.cpp</value>
   </data>
   <data xml:space="preserve" name="LlamaPortHelp">
-    <value>Используется для подключения к API модели. Должен совпадать со значением в настройках провайдера DeepSeek Harness.</value>
+    <value>Порт API модели. Должен совпадать с настройками провайдера в harness.</value>
   </data>
   <data xml:space="preserve" name="BindAddress">
     <value>Адрес привязки llama.cpp</value>
@@ -262,7 +262,7 @@
     <value>Не все сервисы удалось остановить. Повторите остановку.</value>
   </data>
   <data xml:space="preserve" name="BrowserNotReady">
-    <value>Веб-интерфейс ещё не готов.</value>
+    <value>Harness пока недоступен.</value>
   </data>
   <data xml:space="preserve" name="AlreadyRunning">
     <value>LLM Servy уже работает. Закройте другой экземпляр через меню трея.</value>
@@ -375,4 +375,28 @@
   <data xml:space="preserve" name="No">
     <value>Нет</value>
   </data>
+  <data name="HarnessLabel" xml:space="preserve"><value>Harness</value></data>
+  <data name="WorkingFolder" xml:space="preserve"><value>Рабочая папка</value></data>
+  <data name="OpenSelectedHarness" xml:space="preserve"><value>Открыть {0}</value></data>
+  <data name="GroupPi" xml:space="preserve"><value>Pi</value></data>
+  <data name="PiDirectory" xml:space="preserve"><value>Рабочая папка в WSL</value></data>
+  <data name="PiDirectoryHelp" xml:space="preserve"><value>Каталог проекта, в котором запускается Pi.</value></data>
+  <data name="PiExecutable" xml:space="preserve"><value>Исполняемый файл Pi</value></data>
+  <data name="PiExecutableHelp" xml:space="preserve"><value>Команда, доступная в login shell WSL, или абсолютный Linux-путь.</value></data>
+  <data name="PiProvider" xml:space="preserve"><value>Провайдер модели</value></data>
+  <data name="PiProviderHelp" xml:space="preserve"><value>Существующий провайдер в конфигурации Pi. В Pi передаётся ID модели из выбранного INI.</value></data>
+  <data name="OpenPiTerminal" xml:space="preserve"><value>Открывать терминал после запуска</value></data>
+  <data name="OpenPiTerminalHelp" xml:space="preserve"><value>Автоматическое подключение Windows Terminal к запущенной сессии Pi.</value></data>
+  <data name="InvalidHarness" xml:space="preserve"><value>Выберите поддерживаемый harness.</value></data>
+  <data name="InvalidPiSettings" xml:space="preserve"><value>Для Pi укажите абсолютный Linux-путь рабочей папки, исполняемый файл и провайдера.</value></data>
+  <data name="PiMissingExecutable" xml:space="preserve"><value>Исполняемый файл Pi не найден в WSL. Проверьте установку и соответствующую настройку.</value></data>
+  <data name="PiMissingTmux" xml:space="preserve"><value>tmux не найден в WSL. Установите его командой sudo apt install tmux.</value></data>
+  <data name="PiSessionLost" xml:space="preserve"><value>tmux-сессия Pi больше недоступна.</value></data>
+  <data name="PiSupervisorFailed" xml:space="preserve"><value>Ошибка supervisor Pi. Проверьте записи Pi в журнале.</value></data>
+  <data name="PiExited" xml:space="preserve"><value>Pi завершился с кодом {0}.</value></data>
+  <data name="PiSessionStarted" xml:space="preserve"><value>Процесс Pi запущен в отдельной tmux-сессии.</value></data>
+  <data name="PiReady" xml:space="preserve"><value>Процесс Pi работает. Выбранная модель: {0}.</value></data>
+  <data name="PiProcessRunning" xml:space="preserve"><value>Процесс работает</value></data>
+  <data name="PiNoLongerRunning" xml:space="preserve"><value>Pi завершился. Остановите сервисы перед запуском новой сессии.</value></data>
+  <data name="PiTerminalFailed" xml:space="preserve"><value>Не удалось открыть Pi. Убедитесь, что Windows Terminal установлен.</value></data>
 </root>

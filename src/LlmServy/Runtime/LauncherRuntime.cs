@@ -14,12 +14,14 @@ public sealed class LauncherRuntime(AppPaths paths, LauncherLog log, WindowsProc
     private readonly LlamaClient llamaClient = new(llamaHttp);
     private AppSettings? session;
     private DshEndpoint? endpoint;
-    private OwnedProcess? llama, dsh;
+    private PiSession? pi;
+    public TerminalSession? Terminal => pi?.Terminal;
+    private OwnedProcess? llama, harnessProcess;
     private RuntimeSnapshot snapshot = new(new(), new(), false);
     public event Action<RuntimeSnapshot>? Changed;
     public bool HasProcesses => lifetime.HasProcesses;
     public IReadOnlyList<string> StoppedServices => lifetime.StoppedServices;
-    public string? BrowserUrl => endpoint?.BrowserUrl;
+    public string? BrowserUrl => session?.HarnessKind == "pi" ? null : endpoint?.BrowserUrl;
     public string RootUrl => endpoint?.RootUrl ?? "";
     private AppSettings Session => session ?? throw new InvalidOperationException("No active session.");
     private string LlamaUrl => $"http://127.0.0.1:{Session.LlamaPort}";
@@ -37,13 +39,15 @@ public sealed class LauncherRuntime(AppPaths paths, LauncherLog log, WindowsProc
         {
         };
         endpoint = new(session.DshPort);
+        pi = null;
         llama = null;
-        dsh = null;
+        harnessProcess = null;
         Update(new(new(ServiceState.Checking), new(ServiceState.Checking), false));
-        if (!File.Exists(paths.BridgeFile))
+        var bridgeFile = session.HarnessKind == "pi" ? Path.Combine(AppContext.BaseDirectory, "wsl", "pi-bridge.sh") : paths.BridgeFile;
+        if (!File.Exists(bridgeFile))
             throw new AppException(new("MissingBridge"));
         await windows.ExecuteWslAsync(["-d", session.Distro, "--exec", "/bin/true"], token);
-        var script = await windows.ExecuteWslAsync(["-d", session.Distro, "--exec", "wslpath", "-a", "-u", paths.BridgeFile], token);
+        var script = await windows.ExecuteWslAsync(["-d", session.Distro, "--exec", "wslpath", "-a", "-u", bridgeFile], token);
         if (string.IsNullOrWhiteSpace(script))
             throw new AppException(new("MissingBridge"));
         bool ready = await IsLlamaReadyAsync(token);
@@ -96,6 +100,30 @@ public sealed class LauncherRuntime(AppPaths paths, LauncherLog log, WindowsProc
             Llama = new(ServiceState.Ready, ready)
         });
         token.ThrowIfCancellationRequested();
+        if (session.HarnessKind == "pi")
+        {
+            pi = new PiSession(session.Distro, log);
+            Update(snapshot with
+            {
+                Harness = new(ServiceState.Starting)
+            });
+            harnessProcess = OwnedProcess.Start(WindowsProcessAdapter.GetExecutable("", "wsl.exe"),
+                ["-d", session.Distro, "--cd", session.PiDirectory, "--exec", "bash", "-li", script,
+                 "--executable", session.PiExecutable, "--provider", session.PiProvider, "--model", preset.ModelId],
+                AppContext.BaseDirectory, pi.Observe);
+            lifetime.Attach("Pi", new OwnedServiceProcess(harnessProcess, true));
+            await WaitForAsync(() =>
+            {
+                pi.ThrowIfFailed();
+                return Task.FromResult(pi.State == ServiceState.Ready);
+            }, () => { pi.ThrowIfFailed(); return !harnessProcess.Running; }, "Pi", token);
+            Update(snapshot with
+            {
+                Harness = new(ServiceState.Ready),
+                InterfaceReady = true
+            });
+            return;
+        }
         var probe = await endpoint.ProbeAsync(dshHttp, false, token);
         if (probe.Ready)
         {
@@ -104,8 +132,8 @@ public sealed class LauncherRuntime(AppPaths paths, LauncherLog log, WindowsProc
                 log.WriteMessage("DeepSeek Harness", new("ExternalLogin"));
             Update(snapshot with
             {
-                Dsh = new(ServiceState.Ready, true),
-                BrowserReady = true
+                Harness = new(ServiceState.Ready, true),
+                InterfaceReady = true
             });
         }
         else
@@ -114,18 +142,18 @@ public sealed class LauncherRuntime(AppPaths paths, LauncherLog log, WindowsProc
                 throw new AppException(new("PortOccupied", "DeepSeek Harness"));
             Update(snapshot with
             {
-                Dsh = new(ServiceState.Starting)
+                Harness = new(ServiceState.Starting)
             });
             var currentEndpoint = endpoint;
-            dsh = OwnedProcess.Start(WindowsProcessAdapter.GetExecutable("", "wsl.exe"),
+            harnessProcess = OwnedProcess.Start(WindowsProcessAdapter.GetExecutable("", "wsl.exe"),
                 ["-d", session.Distro, "--cd", session.WslDirectory, "--exec", "bash", "-li", script, "--port", session.DshPort.ToString(System.Globalization.CultureInfo.InvariantCulture), "--package", session.DshPackage],
                 AppContext.BaseDirectory, (channel, line) => { currentEndpoint.Observe(line); log.Write("DeepSeek Harness/" + channel, line); });
-            lifetime.Attach("DeepSeek Harness", new OwnedServiceProcess(dsh, true));
-            await WaitForAsync(async () => (await endpoint.ProbeAsync(dshHttp, true, token)).Ready, () => !dsh.Running, "DeepSeek Harness", token);
+            lifetime.Attach("DeepSeek Harness", new OwnedServiceProcess(harnessProcess, true));
+            await WaitForAsync(async () => (await endpoint.ProbeAsync(dshHttp, true, token)).Ready, () => !harnessProcess.Running, "DeepSeek Harness", token);
             Update(snapshot with
             {
-                Dsh = new(ServiceState.Ready),
-                BrowserReady = true
+                Harness = new(ServiceState.Ready),
+                InterfaceReady = true
             });
         }
         token.ThrowIfCancellationRequested();
@@ -147,18 +175,27 @@ public sealed class LauncherRuntime(AppPaths paths, LauncherLog log, WindowsProc
         if (session is null || endpoint is null)
             return snapshot;
         var llamaReady = (llama is null || llama.Running) && await IsLlamaReadyAsync(token);
-        var probe = await endpoint.ProbeAsync(dshHttp, dsh is not null, token);
-        bool dshReady = (dsh is null || dsh.Running) && probe.Ready;
+        if (pi is not null)
+        {
+            var state = pi.State;
+            if (harnessProcess is not null && !harnessProcess.Running && state is ServiceState.Starting or ServiceState.Ready)
+                state = ServiceState.Failed;
+            return new(new(llamaReady ? ServiceState.Ready : ServiceState.Unavailable, llama is null),
+                new(state), state == ServiceState.Ready);
+        }
+        var probe = await endpoint.ProbeAsync(dshHttp, harnessProcess is not null, token);
+        bool dshReady = (harnessProcess is null || harnessProcess.Running) && probe.Ready;
         return new(new(llamaReady ? ServiceState.Ready : ServiceState.Unavailable, llama is null),
-            new(dshReady ? ServiceState.Ready : ServiceState.Unavailable, dsh is null), dshReady);
+            new(dshReady ? ServiceState.Ready : ServiceState.Unavailable, harnessProcess is null), dshReady);
     }
 
     public async Task StopAsync()
     {
         await lifetime.StopAsync();
         llama = null;
-        dsh = null;
+        harnessProcess = null;
         endpoint = null;
+        pi = null;
         session = null;
     }
 
@@ -190,8 +227,8 @@ public sealed class LauncherRuntime(AppPaths paths, LauncherLog log, WindowsProc
         disposed = true;
         // Emergency disposal must finish Linux shutdown before releasing the Windows bridge.
         ResourceCleanup.Run(
-            () => dsh?.StopBridgeAsync().GetAwaiter().GetResult(),
-            () => dsh?.Dispose(),
+            () => harnessProcess?.StopBridgeAsync().GetAwaiter().GetResult(),
+            () => harnessProcess?.Dispose(),
             () => llama?.Dispose(),
             llamaHttp.Dispose,
             dshHttp.Dispose);

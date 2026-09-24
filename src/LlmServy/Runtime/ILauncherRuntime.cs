@@ -4,12 +4,13 @@ using LlmServy.Services;
 
 namespace LlmServy.Runtime;
 
-public sealed record RuntimeSnapshot(ServiceStatus Llama, ServiceStatus Dsh, bool BrowserReady);
+public sealed record RuntimeSnapshot(ServiceStatus Llama, ServiceStatus Harness, bool InterfaceReady);
 
 /// <summary>OS/network boundary for one session. Only acquired process handles may be stopped.</summary>
 public interface ILauncherRuntime : IDisposable
 {
     event Action<RuntimeSnapshot>? Changed;
+    TerminalSession? Terminal => null;
     string? BrowserUrl
     {
         get;

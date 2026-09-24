@@ -93,7 +93,7 @@
     <value>WSL distribution</value>
   </data>
   <data xml:space="preserve" name="DistroHelp">
-    <value>Installed distribution used to run DeepSeek Harness, for example Ubuntu.</value>
+    <value>Installed distribution used to run the selected harness, for example Ubuntu.</value>
   </data>
   <data xml:space="preserve" name="WslDirectory">
     <value>Harness working folder in WSL</value>
@@ -105,7 +105,7 @@
     <value>llama.cpp port</value>
   </data>
   <data xml:space="preserve" name="LlamaPortHelp">
-    <value>Used to connect to the model API. Must match the provider configuration in DeepSeek Harness.</value>
+    <value>Used to connect to the model API. Must match the provider configuration in the harness.</value>
   </data>
   <data xml:space="preserve" name="BindAddress">
     <value>llama.cpp bind address</value>
@@ -262,7 +262,7 @@ Select model {1} in DeepSeek Harness.</value>
     <value>Not all services could be stopped. Retry Stop.</value>
   </data>
   <data xml:space="preserve" name="BrowserNotReady">
-    <value>The web interface is not ready yet.</value>
+    <value>The harness is not available yet.</value>
   </data>
   <data xml:space="preserve" name="AlreadyRunning">
     <value>LLM Servy is already running. Exit the other instance using its tray menu.</value>
@@ -375,4 +375,28 @@ Select model {1} in DeepSeek Harness.</value>
   <data xml:space="preserve" name="No">
     <value>No</value>
   </data>
+  <data name="HarnessLabel" xml:space="preserve"><value>Harness</value></data>
+  <data name="WorkingFolder" xml:space="preserve"><value>Working folder</value></data>
+  <data name="OpenSelectedHarness" xml:space="preserve"><value>Open {0}</value></data>
+  <data name="GroupPi" xml:space="preserve"><value>Pi</value></data>
+  <data name="PiDirectory" xml:space="preserve"><value>Working folder in WSL</value></data>
+  <data name="PiDirectoryHelp" xml:space="preserve"><value>Project directory used when starting Pi.</value></data>
+  <data name="PiExecutable" xml:space="preserve"><value>Pi executable</value></data>
+  <data name="PiExecutableHelp" xml:space="preserve"><value>Command available in the WSL login shell, or an absolute Linux path.</value></data>
+  <data name="PiProvider" xml:space="preserve"><value>Model provider</value></data>
+  <data name="PiProviderHelp" xml:space="preserve"><value>Existing provider in Pi configuration. The selected INI model ID is passed to Pi.</value></data>
+  <data name="OpenPiTerminal" xml:space="preserve"><value>Open terminal after starting</value></data>
+  <data name="OpenPiTerminalHelp" xml:space="preserve"><value>Attach Windows Terminal to the running Pi session automatically.</value></data>
+  <data name="InvalidHarness" xml:space="preserve"><value>Select a supported harness.</value></data>
+  <data name="InvalidPiSettings" xml:space="preserve"><value>Pi requires an absolute Linux working directory, executable and provider.</value></data>
+  <data name="PiMissingExecutable" xml:space="preserve"><value>Pi executable was not found in WSL. Check its installation and executable setting.</value></data>
+  <data name="PiMissingTmux" xml:space="preserve"><value>tmux was not found in WSL. Install it with sudo apt install tmux.</value></data>
+  <data name="PiSessionLost" xml:space="preserve"><value>The Pi tmux session is no longer available.</value></data>
+  <data name="PiSupervisorFailed" xml:space="preserve"><value>The Pi supervisor failed. Check the Pi log entries.</value></data>
+  <data name="PiExited" xml:space="preserve"><value>Pi exited with code {0}.</value></data>
+  <data name="PiSessionStarted" xml:space="preserve"><value>Pi process started in an isolated tmux session.</value></data>
+  <data name="PiReady" xml:space="preserve"><value>Pi process is running. Selected model: {0}.</value></data>
+  <data name="PiProcessRunning" xml:space="preserve"><value>Process running</value></data>
+  <data name="PiNoLongerRunning" xml:space="preserve"><value>Pi has exited. Stop the services before starting a new session.</value></data>
+  <data name="PiTerminalFailed" xml:space="preserve"><value>Unable to open Pi. Make sure Windows Terminal is installed.</value></data>
 </root>

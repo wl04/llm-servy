@@ -48,7 +48,7 @@ public sealed class ControllerTests : IDisposable
         Assert.False(runtime.HasProcesses);
         Assert.Equal("Cancelled", controller.Status.Message.Code);
         Assert.True(controller.CanStart);
-        Assert.False(controller.Status.BrowserReady);
+        Assert.False(controller.Status.InterfaceReady);
     }
 
     [Fact]
@@ -92,7 +92,7 @@ public sealed class ControllerTests : IDisposable
         await controller.StartAsync(Settings, Preset);
 
         Assert.Equal(ServiceState.Stopped, controller.Status.Llama.State);
-        Assert.Equal(ServiceState.Stopped, controller.Status.Dsh.State);
+        Assert.Equal(ServiceState.Stopped, controller.Status.Harness.State);
         Assert.True(controller.CanStart);
     }
 
@@ -105,7 +105,7 @@ public sealed class ControllerTests : IDisposable
 
         await controller.StopAsync();
 
-        Assert.Equal(ServiceState.Stopped, controller.Status.Dsh.State);
+        Assert.Equal(ServiceState.Stopped, controller.Status.Harness.State);
         Assert.Equal(ServiceState.Ready, controller.Status.Llama.State);
         Assert.True(controller.CanStop);
     }
@@ -136,9 +136,9 @@ public sealed class ControllerTests : IDisposable
 
         await controller.RefreshAsync();
 
-        Assert.False(controller.Status.BrowserReady);
+        Assert.False(controller.Status.InterfaceReady);
         Assert.Null(controller.BrowserUrl);
-        Assert.Equal(ServiceState.Unavailable, controller.Status.Dsh.State);
+        Assert.Equal(ServiceState.Unavailable, controller.Status.Harness.State);
     }
 
     [Fact]
@@ -167,7 +167,7 @@ public sealed class ControllerTests : IDisposable
         cancellation.Cancel();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => refresh);
-        Assert.Equal(ServiceState.Ready, controller.Status.Dsh.State);
+        Assert.Equal(ServiceState.Ready, controller.Status.Harness.State);
     }
 
     private sealed class FakeRuntime : ILauncherRuntime

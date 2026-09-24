@@ -7,6 +7,8 @@ namespace LlmServy.Services;
 /// <summary>Serializes session transitions; configuration is captured before asynchronous work.</summary>
 public sealed class LauncherController(ILauncherRuntime runtime, LauncherLog log) : IDisposable
 {
+    private string harnessName = "DeepSeek Harness";
+    public TerminalSession? Terminal => Status.InterfaceReady ? runtime.Terminal : null;
     private readonly SemaphoreSlim transition = new(1, 1);
     private readonly object cancellationGate = new();
     private CancellationTokenSource? startupCancellation;
@@ -14,18 +16,18 @@ public sealed class LauncherController(ILauncherRuntime runtime, LauncherLog log
     public event Action<LauncherStatus>? StatusChanged;
     public bool CanStart => !Status.IsBusy && !Status.IsActive && !runtime.HasProcesses;
     public bool CanStop => Status.IsBusy || Status.IsActive || runtime.HasProcesses;
-    public string? BrowserUrl => Status.BrowserReady ? runtime.BrowserUrl : null;
+    public string? BrowserUrl => Status.InterfaceReady ? runtime.BrowserUrl : null;
 
     private void Set(LauncherStatus status)
     {
         Status = status;
         StatusChanged?.Invoke(status);
     }
-    private void OnRuntimeChanged(RuntimeSnapshot snapshot) => Set(Status with { Llama = snapshot.Llama, Dsh = snapshot.Dsh, BrowserReady = snapshot.BrowserReady });
+    private void OnRuntimeChanged(RuntimeSnapshot snapshot) => Set(Status with { Llama = snapshot.Llama, Harness = snapshot.Harness, InterfaceReady = snapshot.InterfaceReady });
     private LauncherStatus GetStoppedStatus() => Status with
     {
         Llama = runtime.StoppedServices.Contains("llama.cpp") ? new(ServiceState.Stopped) : Status.Llama,
-        Dsh = runtime.StoppedServices.Contains("DeepSeek Harness") ? new(ServiceState.Stopped) : Status.Dsh
+        Harness = runtime.StoppedServices.Contains(harnessName) ? new(ServiceState.Stopped) : Status.Harness
     };
 
     public async Task StartAsync(AppSettings settings, Preset preset)
@@ -40,6 +42,7 @@ public sealed class LauncherController(ILauncherRuntime runtime, LauncherLog log
             {
             };
             SettingsValidator.ValidateValues(snapshot);
+            harnessName = snapshot.HarnessKind == "pi" ? "Pi" : "DeepSeek Harness";
             if (!Path.GetFullPath(snapshot.PresetPath).Equals(preset.IniPath, StringComparison.OrdinalIgnoreCase))
                 throw new AppException(new("WrongPreset"));
             lock (cancellationGate)
@@ -54,8 +57,8 @@ public sealed class LauncherController(ILauncherRuntime runtime, LauncherLog log
             Set(Status with
             {
                 Phase = LaunchPhase.Running,
-                BrowserReady = true,
-                Message = new("Ready", runtime.RootUrl, preset.ModelId)
+                InterfaceReady = true,
+                Message = snapshot.HarnessKind == "pi" ? new("PiReady", preset.ModelId) : new("Ready", runtime.RootUrl, preset.ModelId)
             });
             log.WriteMessage("launcher", new("AllReady"));
         }
@@ -71,7 +74,7 @@ public sealed class LauncherController(ILauncherRuntime runtime, LauncherLog log
             Set(GetStoppedStatus() with
             {
                 Phase = LaunchPhase.Failed,
-                BrowserReady = false,
+                InterfaceReady = false,
                 Message = message,
                 Failure = failure
             });
@@ -101,7 +104,7 @@ public sealed class LauncherController(ILauncherRuntime runtime, LauncherLog log
             Set(Status with
             {
                 Phase = LaunchPhase.Stopping,
-                BrowserReady = false,
+                InterfaceReady = false,
                 Message = new("Stopping"),
                 Failure = null
             });
@@ -120,7 +123,7 @@ public sealed class LauncherController(ILauncherRuntime runtime, LauncherLog log
             Set(GetStoppedStatus() with
             {
                 Phase = LaunchPhase.Failed,
-                BrowserReady = false,
+                InterfaceReady = false,
                 Message = new("StopFailed"),
                 Failure = error
             });

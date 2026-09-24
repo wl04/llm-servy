@@ -12,13 +12,17 @@ public sealed class SettingsView(AppSettings settings, Localizer localizer) : Cu
     public event Action? LanguageChanged;
     private static readonly Dictionary<string, string> Groups = new()
     {
+        ["PiDirectory"] = "GroupPi",
+        ["PiExecutable"] = "GroupPi",
+        ["PiProvider"] = "GroupPi",
+        ["OpenPiTerminal"] = "GroupPi",
         ["Language"] = "GroupAppearance",
         ["ModelsDirectory"] = "GroupModels",
         ["LlamaDirectory"] = "GroupLlama",
         ["LlamaPort"] = "GroupLlama",
         ["BindAddress"] = "GroupLlama",
         ["Distro"] = "GroupWsl",
-        ["WslDirectory"] = "GroupWsl",
+        ["WslDirectory"] = "GroupDsh",
         ["DshPort"] = "GroupDsh",
         ["DshPackage"] = "GroupDsh",
         ["OpenBrowser"] = "GroupDsh",
@@ -55,7 +59,7 @@ public sealed class SettingsView(AppSettings settings, Localizer localizer) : Cu
         public override object? GetEditor(Type editorBaseType) => editorBaseType == typeof(UITypeEditor) ? Name switch
         {
             "ModelsDirectory" or "LlamaDirectory" => new FolderEditor(),
-            "WslDirectory" => new WslFolderEditor(),
+            "WslDirectory" or "PiDirectory" => new WslFolderEditor(),
             _ => inner.GetEditor(editorBaseType)
         } : inner.GetEditor(editorBaseType);
     }

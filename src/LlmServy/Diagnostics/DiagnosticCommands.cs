@@ -11,7 +11,7 @@ internal sealed class DiagnosticCommands
     {
         get; private set;
     }
-    public static bool IsRequested(string[] args) => args.Any(x => x is "--self-test" or "--dsh-integration-test" or "--runtime-integration-test" or "--ui-smoke" or "--settings-smoke" or "--test-echo" or "--test-sleep" or "--test-tree");
+    public static bool IsRequested(string[] args) => args.Any(x => x is "--self-test" or "--dsh-integration-test" or "--runtime-integration-test" or "--pi-integration-test" or "--ui-smoke" or "--settings-smoke" or "--test-echo" or "--test-sleep" or "--test-tree");
 
     public void Run(string[] args)
     {
@@ -48,10 +48,10 @@ internal sealed class DiagnosticCommands
             ExitCode = SelfTest.DshIntegration(paths);
             return;
         }
-        if (args.Contains("--runtime-integration-test"))
+        if (args.Contains("--runtime-integration-test") || args.Contains("--pi-integration-test"))
         {
             var test = new RuntimeIntegration();
-            test.RunAsync(paths).GetAwaiter().GetResult();
+            test.RunAsync(paths, args.Contains("--pi-integration-test")).GetAwaiter().GetResult();
             ExitCode = test.ExitCode;
             return;
         }
@@ -61,6 +61,8 @@ internal sealed class DiagnosticCommands
         var language = GetOption(args, "--language");
         if (language is not null)
             settings.Language = language;
+        if (GetOption(args, "--harness") is { } harness)
+            settings.HarnessKind = harness;
         using Form form = args.Contains("--settings-smoke") ? new SettingsForm(settings, paths.SettingsFile) : new LauncherForm(paths, settings);
         form.Shown += (_, _) => form.BeginInvoke(() =>
         {

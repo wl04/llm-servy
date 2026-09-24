@@ -3,6 +3,11 @@ namespace LlmServy.Configuration;
 /// <summary>Persisted configuration. Names remain stable across UI languages.</summary>
 public sealed record AppSettings
 {
+    public string HarnessKind { get; set; } = "dsh";
+    public string PiDirectory { get; set; } = "/home";
+    public string PiExecutable { get; set; } = "pi";
+    public string PiProvider { get; set; } = "llama-local";
+    public bool OpenPiTerminal { get; set; } = true;
     public string PresetPath { get; set; } = "";
     public string SelectedModelId { get; set; } = "";
     public string ModelsDirectory { get; set; } = "";
