@@ -44,7 +44,7 @@ C# source directories are under `src/LlmServy`:
 | `Localization` | English and Russian resources and language selection |
 | `Diagnostics` | Explicit process, integration, and UI diagnostic modes |
 
-`LauncherController` depends on `ILauncherRuntime`; `Composition` wires the production dependencies. Start and stop transitions are serialized. Each session captures a settings snapshot. Cleanup attempts both services and retains failed cleanup handles for retry; it preserves startup and cleanup failures together.
+`LauncherController` depends on `ILauncherRuntime`; `Composition` wires the production dependencies. Start and stop transitions are serialized. Each session captures a settings snapshot. Reopening an exited Pi uses that snapshot and a selective harness cleanup; llama.cpp ownership and the loaded model are preserved. The same transition lock serializes reopen with Stop, including cancellation of pending Pi startup. Cleanup attempts both services and retains failed cleanup handles for retry; it preserves startup and cleanup failures together.
 
 Domain commands change state and normally return completion only. Queries return data without changing state or raising notifications. The llama.cpp `/props?autoload=true` request is exposed as a command because it loads a model. Native process creation returns an owned handle at the Windows API boundary. Atomic operations and framework contracts may combine state changes with a result when this is inherent to the operation.
 
@@ -89,7 +89,7 @@ Run these after publishing:
 | --- | --- | --- |
 | `--self-test` | Windows argument escaping, pipes, process-tree cleanup, and Ubuntu WSL launch | `launcher-self-test.txt` |
 | `--runtime-integration-test` | Production controller with simulated llama.cpp HTTP and real authenticated harness startup, readiness, shutdown, restart, and direct disposal | `launcher-runtime-test.txt` |
-| `--pi-integration-test` | Production controller with simulated llama.cpp and a CLI fixture, real Windows → WSL → tmux, terminal endpoint, refresh, shutdown, restart and disposal | `launcher-pi-test.txt` |
+| `--pi-integration-test` | Production controller with simulated llama.cpp and a CLI fixture, real Windows → WSL → tmux, terminal endpoint, normal exit and reopen without model reload, refresh, shutdown, restart and disposal | `launcher-pi-test.txt` |
 | `--dsh-integration-test` | Direct bridge and authenticated harness startup/shutdown | `launcher-dsh-test.txt` |
 
 Run the two DSH integration modes separately: both use port **13083**. They read the normal application settings and require a working WSL distribution and the configured harness package. The runtime test also needs a readable model INI; it rejects an occupied diagnostic port. The Pi mode uses tmux with a temporary CLI fixture and does not require Pi credentials. It validates orchestration, not the actual Pi provider or Windows Terminal UI. No integration mode loads a model into VRAM.

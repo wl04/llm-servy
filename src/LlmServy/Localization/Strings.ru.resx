@@ -397,6 +397,10 @@
   <data name="PiSessionStarted" xml:space="preserve"><value>Процесс Pi запущен в отдельной tmux-сессии.</value></data>
   <data name="PiReady" xml:space="preserve"><value>Процесс Pi работает. Выбранная модель: {0}.</value></data>
   <data name="PiProcessRunning" xml:space="preserve"><value>Процесс работает</value></data>
-  <data name="PiNoLongerRunning" xml:space="preserve"><value>Pi завершился. Остановите сервисы перед запуском новой сессии.</value></data>
+  <data name="PiNoLongerRunning" xml:space="preserve"><value>Pi завершился. Откройте Pi для запуска новой сессии без перезапуска llama.cpp.</value></data>
   <data name="PiTerminalFailed" xml:space="preserve"><value>Не удалось открыть Pi. Убедитесь, что Windows Terminal установлен.</value></data>
+  <data name="PiLlamaUnavailable" xml:space="preserve"><value>llama.cpp недоступен. Восстановите работу сервера модели перед открытием Pi.</value></data>
+  <data name="PiRestarting" xml:space="preserve"><value>Запуск новой сессии Pi…</value></data>
+  <data name="PiReopened" xml:space="preserve"><value>Pi работает. Используется уже запущенный сервер модели.</value></data>
+  <data name="PiRestartFailed" xml:space="preserve"><value>Не удалось запустить Pi. Можно повторить открытие; llama.cpp не остановлен.</value></data>
 </root>

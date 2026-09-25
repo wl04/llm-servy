@@ -7,6 +7,75 @@ namespace LlmServy.Services;
 /// <summary>Serializes session transitions; configuration is captured before asynchronous work.</summary>
 public sealed class LauncherController(ILauncherRuntime runtime, LauncherLog log) : IDisposable
 {
+    public bool CanOpen => Status.IsActive && !Status.IsBusy &&
+        (Status.InterfaceReady || (harnessName == "Pi" && Status.Llama.State == ServiceState.Ready));
+
+    /// <summary>Refreshes readiness and restarts an exited Pi under the same transition lock as Stop.</summary>
+    public async Task PrepareInterfaceAsync()
+    {
+        if (!await transition.WaitAsync(0))
+            return;
+        try
+        {
+            if (!Status.IsActive || Status.IsBusy || harnessName != "Pi")
+                return;
+            lock (cancellationGate)
+                startupCancellation = new();
+            Set(Status with
+            {
+                Phase = LaunchPhase.Starting,
+                InterfaceReady = false
+            });
+            OnRuntimeChanged(await runtime.GetSnapshotAsync(startupCancellation.Token));
+            if (Status.InterfaceReady)
+            {
+                Set(Status with
+                {
+                    Phase = LaunchPhase.Running
+                });
+                return;
+            }
+            if (Status.Llama.State != ServiceState.Ready)
+                throw new AppException(new("PiLlamaUnavailable"));
+            runtime.Changed += OnRuntimeChanged;
+            Set(Status with
+            {
+                Phase = LaunchPhase.Starting,
+                InterfaceReady = false,
+                Failure = null,
+                Message = new("PiRestarting")
+            });
+            await runtime.EnsurePiAsync(startupCancellation.Token);
+            OnRuntimeChanged(await runtime.GetSnapshotAsync(startupCancellation.Token));
+            Set(Status with
+            {
+                Phase = LaunchPhase.Running,
+                Message = new("PiReopened")
+            });
+        }
+        catch (Exception error)
+        {
+            Set(Status with
+            {
+                Phase = LaunchPhase.Running,
+                Harness = new(ServiceState.Failed),
+                InterfaceReady = false,
+                Failure = error,
+                Message = new("PiRestartFailed")
+            });
+            log.WriteError("launcher", error);
+        }
+        finally
+        {
+            runtime.Changed -= OnRuntimeChanged;
+            lock (cancellationGate)
+            {
+                startupCancellation?.Dispose();
+                startupCancellation = null;
+            }
+            transition.Release();
+        }
+    }
     private string harnessName = "DeepSeek Harness";
     public TerminalSession? Terminal => Status.InterfaceReady ? runtime.Terminal : null;
     private readonly SemaphoreSlim transition = new(1, 1);

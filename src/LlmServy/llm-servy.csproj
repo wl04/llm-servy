@@ -13,7 +13,7 @@
     <PlatformTarget>x64</PlatformTarget>
     <ApplicationIcon>../../assets/llm-servy.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>0.2.1</Version>
+    <Version>0.2.2</Version>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Copyright>Copyright (c) 2026 LLM Servy contributors</Copyright>
     <Description>Windows llama.cpp launcher with WSL harness support</Description>

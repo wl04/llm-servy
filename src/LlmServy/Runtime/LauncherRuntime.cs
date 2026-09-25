@@ -15,6 +15,7 @@ public sealed class LauncherRuntime(AppPaths paths, LauncherLog log, WindowsProc
     private AppSettings? session;
     private DshEndpoint? endpoint;
     private PiSession? pi;
+    private string piScript = "", piModelId = "";
     public TerminalSession? Terminal => pi?.Terminal;
     private OwnedProcess? llama, harnessProcess;
     private RuntimeSnapshot snapshot = new(new(), new(), false);
@@ -102,26 +103,9 @@ public sealed class LauncherRuntime(AppPaths paths, LauncherLog log, WindowsProc
         token.ThrowIfCancellationRequested();
         if (session.HarnessKind == "pi")
         {
-            pi = new PiSession(session.Distro, log);
-            Update(snapshot with
-            {
-                Harness = new(ServiceState.Starting)
-            });
-            harnessProcess = OwnedProcess.Start(WindowsProcessAdapter.GetExecutable("", "wsl.exe"),
-                ["-d", session.Distro, "--cd", session.PiDirectory, "--exec", "bash", "-li", script,
-                 "--executable", session.PiExecutable, "--provider", session.PiProvider, "--model", preset.ModelId],
-                AppContext.BaseDirectory, pi.Observe);
-            lifetime.Attach("Pi", new OwnedServiceProcess(harnessProcess, true));
-            await WaitForAsync(() =>
-            {
-                pi.ThrowIfFailed();
-                return Task.FromResult(pi.State == ServiceState.Ready);
-            }, () => { pi.ThrowIfFailed(); return !harnessProcess.Running; }, "Pi", token);
-            Update(snapshot with
-            {
-                Harness = new(ServiceState.Ready),
-                InterfaceReady = true
-            });
+            piScript = script;
+            piModelId = preset.ModelId;
+            await StartPiAsync(token);
             return;
         }
         var probe = await endpoint.ProbeAsync(dshHttp, false, token);
@@ -159,6 +143,65 @@ public sealed class LauncherRuntime(AppPaths paths, LauncherLog log, WindowsProc
         token.ThrowIfCancellationRequested();
     }
 
+    private async Task StartPiAsync(CancellationToken token)
+    {
+        pi = new PiSession(Session.Distro, log);
+        Update(snapshot with
+        {
+            Harness = new(ServiceState.Starting)
+        });
+        harnessProcess = OwnedProcess.Start(WindowsProcessAdapter.GetExecutable("", "wsl.exe"),
+            ["-d", Session.Distro, "--cd", Session.PiDirectory, "--exec", "bash", "-li", piScript,
+                 "--executable", Session.PiExecutable, "--provider", Session.PiProvider, "--model", piModelId],
+            AppContext.BaseDirectory, pi.Observe);
+        lifetime.Attach("Pi", new OwnedServiceProcess(harnessProcess, true));
+        await WaitForAsync(() =>
+        {
+            pi.ThrowIfFailed();
+            return Task.FromResult(pi.State == ServiceState.Ready);
+        }, () => { pi.ThrowIfFailed(); return !harnessProcess.Running; }, "Pi", token);
+        Update(snapshot with
+        {
+            Harness = new(ServiceState.Ready),
+            InterfaceReady = true
+        });
+    }
+
+    /// <summary>Starts a replacement Pi process using the active session settings, preserving llama.cpp.</summary>
+    public async Task EnsurePiAsync(CancellationToken token)
+    {
+        if (Session.HarnessKind != "pi")
+            throw new InvalidOperationException("The active harness is not Pi.");
+        var current = await GetSnapshotAsync(token);
+        if (current.InterfaceReady)
+            return;
+        if (current.Llama.State != ServiceState.Ready)
+            throw new AppException(new("PiLlamaUnavailable"));
+        await lifetime.StopAsync("Pi");
+        harnessProcess = null;
+        Update(current);
+        try
+        {
+            token.ThrowIfCancellationRequested();
+            await StartPiAsync(token);
+        }
+        catch (Exception error)
+        {
+            Update(snapshot with
+            {
+                Harness = new(ServiceState.Failed),
+                InterfaceReady = false
+            });
+            try
+            {
+                await lifetime.StopAsync("Pi");
+                harnessProcess = null;
+            }
+            catch (Exception cleanupError) { throw new AggregateException(error, cleanupError); }
+            throw;
+        }
+    }
+
     private async Task<bool> IsLlamaReadyAsync(CancellationToken token)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
@@ -178,7 +221,7 @@ public sealed class LauncherRuntime(AppPaths paths, LauncherLog log, WindowsProc
         if (pi is not null)
         {
             var state = pi.State;
-            if (harnessProcess is not null && !harnessProcess.Running && state is ServiceState.Starting or ServiceState.Ready)
+            if ((harnessProcess is null || !harnessProcess.Running) && state is ServiceState.Starting or ServiceState.Ready)
                 state = ServiceState.Failed;
             return new(new(llamaReady ? ServiceState.Ready : ServiceState.Unavailable, llama is null),
                 new(state), state == ServiceState.Ready);

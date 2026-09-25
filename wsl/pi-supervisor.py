@@ -102,10 +102,15 @@ def main():
                 except ProcessLookupError:
                     pass
             if Path(socket).exists():
+                # Detach sends a successful terminal-client exit before server shutdown.
+                command('detach-client', '-s', 'pi', check=False)
+                remaining_clients = command('list-clients', '-t', 'pi', '-F', '#{client_name}', check=False)
                 result = command('kill-server', check=False)
                 if result.returncode and Path(socket).exists():
                     emit('error', code='PiSupervisorFailed')
                     raise RuntimeError('Unable to stop the private tmux server')
+                if remaining_clients.stdout.strip():
+                    raise RuntimeError('Unable to detach Pi terminal clients')
             emit('stopped')
 
 

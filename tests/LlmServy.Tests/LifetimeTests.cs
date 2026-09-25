@@ -41,6 +41,24 @@ public sealed class LifetimeTests
         Assert.False(lifetime.HasProcesses);
     }
 
+    [Fact]
+    public async Task StopAsync_PreservesOtherServices_WhenSingleServiceReleased()
+    {
+        var lifetime = new ServiceLifetime();
+        var llama = new FakeProcess(false);
+        var pi = new FakeProcess(false);
+        lifetime.Attach("llama.cpp", llama);
+        lifetime.Attach("Pi", pi);
+
+        await lifetime.StopAsync("Pi");
+        lifetime.Attach("Pi", new FakeProcess(false));
+
+        Assert.Equal(1, pi.StopCount);
+        Assert.Equal(0, llama.StopCount);
+        await lifetime.StopAsync();
+        Assert.Equal(1, llama.StopCount);
+    }
+
     private sealed class FakeProcess(bool fails) : IServiceLifetime
     {
         public int StopCount

@@ -37,7 +37,7 @@ internal sealed class RuntimeIntegration
             if (testPi)
             {
                 piFixture = Path.Combine(paths.DataDirectory, "pi-fixture.sh");
-                File.WriteAllText(piFixture, "#!/bin/sh\nexec sleep 120\n");
+                File.WriteAllText(piFixture, "#!/bin/sh\nread answer\nexit 0\n");
                 var linuxFixture = await windows.ExecuteWslAsync(["-d", settings.Distro, "--exec", "wslpath", "-a", "-u", piFixture], CancellationToken.None);
                 await windows.ExecuteWslAsync(["-d", settings.Distro, "--exec", "chmod", "u+x", linuxFixture], CancellationToken.None);
                 settings.PiExecutable = linuxFixture;
@@ -69,6 +69,30 @@ internal sealed class RuntimeIntegration
             if (!controller.Status.InterfaceReady)
                 throw new InvalidOperationException("Readiness refresh lost the harness.");
 
+            if (testPi)
+            {
+                var firstTerminal = controller.Terminal ?? throw new InvalidOperationException("Missing Pi terminal.");
+                await windows.ExecuteWslAsync(["-d", firstTerminal.Distro, "--exec", "tmux", "-S", firstTerminal.Socket,
+                    "send-keys", "-t", "pi", "quit", "Enter"], CancellationToken.None);
+                using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                do
+                {
+                    await controller.RefreshAsync(deadline.Token);
+                    if (controller.Status.Harness.State == ServiceState.Stopped)
+                        break;
+                    await Task.Delay(100, deadline.Token);
+                } while (true);
+                if (!controller.CanOpen)
+                    throw new InvalidOperationException("Cannot reopen exited Pi.");
+                await controller.PrepareInterfaceAsync();
+                if (controller.Status.Failure is { } reopenFailure)
+                    throw reopenFailure;
+                if (controller.Terminal is not { } reopened || reopened.Socket == firstTerminal.Socket)
+                    throw new InvalidOperationException("Pi was not replaced.");
+                if (llamaHandler.LoadCount != 1)
+                    throw new InvalidOperationException("Reopening Pi reloaded the model.");
+            }
+
             await controller.StopAsync();
             if (controller.Status.Failure is { } stopFailure)
                 throw stopFailure;
@@ -92,7 +116,7 @@ internal sealed class RuntimeIntegration
             var probe = testPi ? default : await new DshEndpoint(TestPort).ProbeAsync(probeClient, false, CancellationToken.None);
             if (probe is { Ready: true })
                 throw new InvalidOperationException("Harness still responds after runtime disposal.");
-            File.WriteAllText(resultFile, testPi ? "PASS production controller/runtime: simulated llama.cpp and Pi CLI fixture, real Windows -> WSL -> tmux, terminal endpoint, refresh, stop, restart, direct disposal. No GPU model loaded.\n" : "PASS production controller/runtime: simulated existing llama.cpp, real Windows -> WSL -> authenticated DeepSeek Harness, refresh, stop, restart, direct disposal, ownership preserved. No GPU model loaded.\n");
+            File.WriteAllText(resultFile, testPi ? "PASS production controller/runtime: simulated llama.cpp and Pi CLI fixture, real Windows -> WSL -> tmux, terminal endpoint, normal Pi exit, reopen without model reload, refresh, stop, restart, direct disposal. No GPU model loaded.\n" : "PASS production controller/runtime: simulated existing llama.cpp, real Windows -> WSL -> authenticated DeepSeek Harness, refresh, stop, restart, direct disposal, ownership preserved. No GPU model loaded.\n");
         }
         catch (Exception error)
         {
@@ -116,8 +140,14 @@ internal sealed class RuntimeIntegration
 
     private sealed class ReadyLlama(string modelId) : HttpMessageHandler
     {
+        public int LoadCount
+        {
+            get; private set;
+        }
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            if (request.RequestUri?.AbsolutePath == "/props")
+                LoadCount++;
             var body = (request.RequestUri ?? throw new InvalidOperationException("Request URI is required.")).AbsolutePath switch
             {
                 "/health" => "{\"status\":\"ok\"}",

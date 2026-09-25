@@ -157,3 +157,36 @@ class PiSupervisorTests(unittest.TestCase):
         if wire_format.returncode == 0:
             self.assertEqual(wire_format.stdout.strip(), 'csi-u')
         process.communicate('stop\n', timeout=10)
+
+    def test_exit_detaches_terminal_successfully_when_pi_finishes(self):
+        for exit_code in (0, 17):
+            with self.subTest(exit_code=exit_code):
+                marker = self.root / 'quit'
+                marker.unlink(missing_ok=True)
+                self.pi.write_text('#!' + sys.executable + '\nimport time,sys\nfrom pathlib import Path\nwhile not Path("quit").exists(): time.sleep(.05)\nsys.exit(' + str(exit_code) + ')\n')
+                process = self.launch()
+                socket = self.event()['socket']
+                master, slave = pty.openpty()
+                viewer = subprocess.Popen(['tmux', '-S', socket, 'attach-session', '-t', 'pi'],
+                    stdin=slave, stdout=slave, stderr=slave, env=dict(os.environ, TERM='xterm-256color'))
+                os.close(slave)
+                try:
+                    deadline = time.monotonic() + 5
+                    while time.monotonic() < deadline:
+                        attached = subprocess.check_output(['tmux', '-S', socket, 'display-message', '-p', '-t', 'pi', '#{session_attached}'], text=True).strip()
+                        if attached == '1': break
+                        time.sleep(.05)
+                    self.assertEqual(attached, '1')
+
+                    marker.touch()
+                    process.wait(timeout=10)
+                    viewer.wait(timeout=5)
+
+                    self.assertEqual(viewer.returncode, 0)
+                    self.assertEqual(process.returncode, exit_code)
+                finally:
+                    os.close(master)
+                    if viewer.poll() is None: viewer.wait(timeout=5)
+                    if process.poll() is None: process.communicate('stop\n', timeout=10)
+                    for stream in (process.stdin, process.stdout, process.stderr): stream.close()
+                    self.process = None

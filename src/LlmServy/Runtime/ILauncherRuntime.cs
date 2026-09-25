@@ -35,4 +35,7 @@ public interface ILauncherRuntime : IDisposable
     /// <summary>Stops acquired processes, attempts each cleanup, and retains failures for retry.</summary>
     /// <remarks>Cleanup uses bounded shutdown waits and is not cancelled with startup.</remarks>
     Task StopAsync();
+    /// <summary>Ensures Pi is running using the active session configuration; never restarts or reloads llama.cpp.</summary>
+    /// <remarks>Only valid for a Pi session. The caller serializes this command with startup and shutdown.</remarks>
+    Task EnsurePiAsync(CancellationToken token) => throw new NotSupportedException();
 }

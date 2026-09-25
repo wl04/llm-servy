@@ -170,8 +170,113 @@ public sealed class ControllerTests : IDisposable
         Assert.Equal(ServiceState.Ready, controller.Status.Harness.State);
     }
 
+    [Theory]
+    [InlineData(ServiceState.Stopped)]
+    [InlineData(ServiceState.Failed)]
+    public async Task PrepareInterfaceAsync_RestartsOnlyPi_WhenProcessHasExited(ServiceState state)
+    {
+        var runtime = new FakeRuntime();
+        using var controller = Create(runtime);
+        await controller.StartAsync(Settings with
+        {
+            HarnessKind = "pi"
+        }, Preset);
+        runtime.Snapshot = new(new(ServiceState.Ready), new(state), false);
+        await controller.RefreshAsync();
+
+        Assert.True(controller.CanOpen);
+        await controller.PrepareInterfaceAsync();
+
+        Assert.Equal(1, runtime.EnsureCount);
+        Assert.Equal(1, runtime.StartCount);
+        Assert.True(runtime.HasProcesses);
+        Assert.True(controller.Status.InterfaceReady);
+    }
+
+    [Fact]
+    public async Task PrepareInterfaceAsync_PreservesLlamaAndAllowsRetry_WhenPiRestartFails()
+    {
+        var runtime = new FakeRuntime { EnsureFailure = new IOException("Pi startup failed") };
+        using var controller = Create(runtime);
+        await controller.StartAsync(Settings with
+        {
+            HarnessKind = "pi"
+        }, Preset);
+        runtime.Snapshot = new(new(ServiceState.Ready), new(ServiceState.Stopped), false);
+
+        await controller.PrepareInterfaceAsync();
+
+        Assert.Same(runtime.EnsureFailure, controller.Status.Failure);
+        Assert.True(controller.Status.IsActive);
+        Assert.True(runtime.HasProcesses);
+        Assert.True(controller.CanOpen);
+        Assert.Equal(ServiceState.Ready, controller.Status.Llama.State);
+    }
+
+    [Fact]
+    public async Task PrepareInterfaceAsync_DoesNotRestart_WhenPiStillRunning()
+    {
+        var runtime = new FakeRuntime();
+        using var controller = Create(runtime);
+        await controller.StartAsync(Settings with
+        {
+            HarnessKind = "pi"
+        }, Preset);
+
+        await controller.PrepareInterfaceAsync();
+
+        Assert.Equal(0, runtime.EnsureCount);
+    }
+
+    [Fact]
+    public async Task StopAsync_CancelsPiReopen_WhenStartupPending()
+    {
+        var runtime = new FakeRuntime { WaitForEnsure = true };
+        using var controller = Create(runtime);
+        await controller.StartAsync(Settings with
+        {
+            HarnessKind = "pi"
+        }, Preset);
+        runtime.Snapshot = new(new(ServiceState.Ready), new(ServiceState.Stopped), false);
+        var reopen = controller.PrepareInterfaceAsync();
+        await runtime.EnsureEntered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        await controller.PrepareInterfaceAsync();
+        Assert.Equal(1, runtime.EnsureCount);
+        await controller.StopAsync().WaitAsync(TimeSpan.FromSeconds(5));
+        await reopen;
+
+        Assert.True(controller.CanStart);
+        Assert.False(runtime.HasProcesses);
+        Assert.False(controller.CanOpen);
+    }
+
     private sealed class FakeRuntime : ILauncherRuntime
     {
+        public int EnsureCount
+        {
+            get; private set;
+        }
+        public Exception? EnsureFailure
+        {
+            get; init;
+        }
+        public bool WaitForEnsure
+        {
+            get; init;
+        }
+        public TaskCompletionSource EnsureEntered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public async Task EnsurePiAsync(CancellationToken token)
+        {
+            EnsureCount++;
+            EnsureEntered.TrySetResult();
+            if (WaitForEnsure)
+                await Release.Task.WaitAsync(token);
+            if (EnsureFailure is not null)
+                throw EnsureFailure;
+            Snapshot = new(new(ServiceState.Ready), new(ServiceState.Ready), true);
+            Changed?.Invoke(Snapshot);
+        }
         public event Action<RuntimeSnapshot>? Changed;
         public TaskCompletionSource Entered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);

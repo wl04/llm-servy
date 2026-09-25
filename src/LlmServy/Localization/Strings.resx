@@ -397,6 +397,10 @@ Select model {1} in DeepSeek Harness.</value>
   <data name="PiSessionStarted" xml:space="preserve"><value>Pi process started in an isolated tmux session.</value></data>
   <data name="PiReady" xml:space="preserve"><value>Pi process is running. Selected model: {0}.</value></data>
   <data name="PiProcessRunning" xml:space="preserve"><value>Process running</value></data>
-  <data name="PiNoLongerRunning" xml:space="preserve"><value>Pi has exited. Stop the services before starting a new session.</value></data>
+  <data name="PiNoLongerRunning" xml:space="preserve"><value>Pi has exited. Open Pi to start a new session without restarting llama.cpp.</value></data>
   <data name="PiTerminalFailed" xml:space="preserve"><value>Unable to open Pi. Make sure Windows Terminal is installed.</value></data>
+  <data name="PiLlamaUnavailable" xml:space="preserve"><value>llama.cpp is unavailable. Restore the model server before reopening Pi.</value></data>
+  <data name="PiRestarting" xml:space="preserve"><value>Starting a new Pi session…</value></data>
+  <data name="PiReopened" xml:space="preserve"><value>Pi is running. Connected to the existing model server.</value></data>
+  <data name="PiRestartFailed" xml:space="preserve"><value>Unable to start Pi. You can retry opening it; llama.cpp has not been stopped.</value></data>
 </root>

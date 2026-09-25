@@ -113,7 +113,7 @@ public sealed class LauncherForm : Form
         var actions = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false };
         Setup(start, localizer.Get("Start"), async (_, _) => await StartAsync());
         Setup(stop, localizer.Get("Stop"), async (_, _) => await controller.StopAsync());
-        Setup(browser, localizer.Get("OpenHarness"), (_, _) => OpenInterface());
+        Setup(browser, localizer.Get("OpenHarness"), async (_, _) => await OpenInterfaceAsync());
         browser.Width = 235;
         Setup(options, localizer.Get("Settings"), (_, _) => EditSettings());
         actions.Controls.AddRange([start, stop, browser, options]);
@@ -130,7 +130,7 @@ public sealed class LauncherForm : Form
         AddTray("Show", (_, _) => { Show(); WindowState = FormWindowState.Normal; Activate(); });
         AddTray("Start", async (_, _) => await StartAsync());
         AddTray("Stop", async (_, _) => await controller.StopAsync());
-        AddTray("OpenHarness", (_, _) => OpenInterface());
+        AddTray("OpenHarness", async (_, _) => await OpenInterfaceAsync());
         AddTray("Exit", async (_, _) => await QuitAsync());
         menu.Opening += (_, _) =>
         {
@@ -255,9 +255,9 @@ public sealed class LauncherForm : Form
         workingFolder.Text = controller.CanStart ? (settings.HarnessKind == "pi" ? settings.PiDirectory : settings.WslDirectory) : activeDirectory;
         start.Enabled = controller.CanStart && models.Items.Count > 0;
         stop.Enabled = controller.CanStop;
-        browser.Enabled = status.InterfaceReady;
+        browser.Enabled = controller.CanOpen;
         models.Enabled = controller.CanStart;
-        if (kind == "pi" && status.IsActive && status.Harness.State != ServiceState.Ready)
+        if (kind == "pi" && status.IsActive && status.Failure is null && status.Harness.State != ServiceState.Ready)
         {
             note.Text = localizer.Get("PiNoLongerRunning");
             return;
@@ -346,6 +346,13 @@ public sealed class LauncherForm : Form
             }
         }
         catch (Exception error) { log.WriteError("launcher", error); note.Text = localizer.Error(error); }
+    }
+
+    private async Task OpenInterfaceAsync()
+    {
+        await controller.PrepareInterfaceAsync();
+        if (controller.Status.InterfaceReady)
+            OpenInterface();
     }
 
     private void OpenInterface()
