@@ -18,6 +18,21 @@ def emit(state, **fields):
     print(json.dumps(dict(state=state, **fields)), flush=True)
 
 
+def detach_clients(command, timeout=2):
+    """Wait for terminal clients to acknowledge detach before server shutdown."""
+    command('detach-client', '-s', 'pi', check=False)
+    deadline = time.monotonic() + timeout
+    while True:
+        clients = command('list-clients', '-t', 'pi', '-F', '#{client_name}', check=False)
+        if clients.returncode:
+            raise RuntimeError('Unable to inspect Pi terminal clients')
+        if not clients.stdout.strip():
+            return
+        if time.monotonic() >= deadline:
+            raise TimeoutError('Pi terminal clients did not detach before timeout')
+        time.sleep(.05)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--executable', default='pi')
@@ -102,15 +117,15 @@ def main():
                 except ProcessLookupError:
                     pass
             if Path(socket).exists():
-                # Detach sends a successful terminal-client exit before server shutdown.
-                command('detach-client', '-s', 'pi', check=False)
-                remaining_clients = command('list-clients', '-t', 'pi', '-F', '#{client_name}', check=False)
-                result = command('kill-server', check=False)
-                if result.returncode and Path(socket).exists():
-                    emit('error', code='PiSupervisorFailed')
-                    raise RuntimeError('Unable to stop the private tmux server')
-                if remaining_clients.stdout.strip():
-                    raise RuntimeError('Unable to detach Pi terminal clients')
+                # Detach is asynchronous: its command can finish before clients leave.
+                # Even if detach fails, still stop this private server.
+                try:
+                    detach_clients(command)
+                finally:
+                    result = command('kill-server', check=False)
+                    if result.returncode and Path(socket).exists():
+                        emit('error', code='PiSupervisorFailed')
+                        raise RuntimeError('Unable to stop the private tmux server')
             emit('stopped')
 
 
